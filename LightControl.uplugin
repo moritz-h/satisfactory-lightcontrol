@@ -13,5 +13,12 @@
 	"CanContainContent": true,
 	"IsBetaVersion": false,
 	"IsExperimentalVersion": false,
-	"Installed": false
+	"Installed": false,
+	"Modules": [
+		{
+			"Name": "LightControl",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	]
 }
