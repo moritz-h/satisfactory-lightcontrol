@@ -14,13 +14,18 @@ struct FControlledLight
 {
     GENERATED_BODY()
 
-    FControlledLight() : lightActor(nullptr), dimmer(0.0f), colorIdx(0) {}
+    FControlledLight() : lightActor(nullptr), enabled_actual(false), enabled_target(true), dimmer_actual(-1.0f), dimmer_target(0.0f), colorIdx_actual(-1), colorIdx_target(0) {}
 
     AFGBuildableLightSource* lightActor;
 
-    float dimmer;
+    bool enabled_actual;
+    bool enabled_target;
 
-    int32 colorIdx;
+    int32 colorIdx_actual;
+    int32 colorIdx_target;
+
+    float dimmer_actual;
+    float dimmer_target;
 };
 
 /**

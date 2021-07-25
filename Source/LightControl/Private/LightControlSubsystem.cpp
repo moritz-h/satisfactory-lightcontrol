@@ -8,7 +8,7 @@ ALightControlSubsystem::ALightControlSubsystem()
     SetActorTickEnabled(true);
     socket = nullptr;
     receiver = nullptr;
-    FLinearColor col(0.0f, 0.0f, 0.0f);
+    const FLinearColor col(0.0f, 0.0f, 0.0f);
     colors.Init(col, 7);
 }
 
@@ -27,9 +27,9 @@ void ALightControlSubsystem::BeginPlay()
         TEXT("Build_StreetLight_C_2147391627"),
     };
 
-    int32 lightNum = lightNames.Num();
+    const int32 lightNum = lightNames.Num();
     UE_LOG(LogTemp, Warning, TEXT("#### ALightControlSubsystem: Init %i lights"), lightNum);
-    FControlledLight initLight;
+    const FControlledLight initLight;
     lights.Init(initLight, lightNum);
 
     TArray<AActor*> FoundLightSourceActors;
@@ -86,15 +86,21 @@ void ALightControlSubsystem::Tick(float DeltaSeconds)
     // Set Actors
     for (FControlledLight& l : lights) {
         if (l.lightActor != nullptr) {
-            FLightSourceControlData data;
-            data.ColorSlotIndex = l.colorIdx;
-            data.Intensity = l.dimmer;
-            data.IsTimeOfDayAware = false;
-            l.lightActor->SetLightControlData(data);
-            if (l.dimmer == 0.0f) {
-                l.lightActor->SetLightEnabled(false);
-            } else {
-                l.lightActor->SetLightEnabled(true);
+            const bool enabled = l.enabled_target;
+            if (l.enabled_actual != enabled) {
+                l.lightActor->SetLightEnabled(enabled);
+                l.enabled_actual = enabled;
+            }
+            const int32 colorIdx = l.colorIdx_target;
+            const int dimmer = l.dimmer_target;
+            if (l.colorIdx_actual != colorIdx || l.dimmer_actual != dimmer) {
+                FLightSourceControlData data;
+                data.ColorSlotIndex = colorIdx;
+                data.Intensity = dimmer;
+                data.IsTimeOfDayAware = false;
+                l.lightActor->SetLightControlData(data);
+                l.colorIdx_actual = colorIdx;
+                l.dimmer_actual = dimmer;
             }
         }
     }
@@ -108,24 +114,24 @@ void ALightControlSubsystem::Receive(const FArrayReaderPtr& data, const FIPv4End
     if (size < 10 || strncmp(&buffer[0], "Art-Net", 8) != 0) {
         return;
     }
-    int OpCode = (buffer[9] << 8) + buffer[8];
+    const int OpCode = (buffer[9] << 8) + buffer[8];
 
     if (OpCode != 0x5000 || size <= 18) {
         return;
     }
 
-    int8 ProtVerHi = buffer[10];
-    int8 ProtVerLo = buffer[11];
-    int8 Sequence = buffer[12];
-    int8 Physical = buffer[13];
-    int8 SubUni = buffer[14];
-    int8 Net = buffer[15];
+    const int8 ProtVerHi = buffer[10];
+    const int8 ProtVerLo = buffer[11];
+    const int8 Sequence = buffer[12];
+    const int8 Physical = buffer[13];
+    const int8 SubUni = buffer[14];
+    const int8 Net = buffer[15];
     if (SubUni != 0 || Net != 0) {
         return;
     }
 
-    int DataLength = ((buffer[16] << 8) | buffer[17]);
-    if (DataLength < 2 || DataLength > 512 || size < 18 + DataLength ) {
+    const int DataLength = ((buffer[16] << 8) | buffer[17]);
+    if (DataLength < 2 || DataLength > 512 || size < 18 + DataLength) {
         return;
     }
 
@@ -133,22 +139,20 @@ void ALightControlSubsystem::Receive(const FArrayReaderPtr& data, const FIPv4End
 
     // 7 * 3 color channels
     for (int i = 0; i < 7; i++) {
-        float r = static_cast<float>(uBuffer[18 + 3 * i + 0]) / 255.0f;
-        float g = static_cast<float>(uBuffer[18 + 3 * i + 1]) / 255.0f;
-        float b = static_cast<float>(uBuffer[18 + 3 * i + 2]) / 255.0f;
+        const float r = static_cast<float>(uBuffer[18 + 3 * i + 0]) / 255.0f;
+        const float g = static_cast<float>(uBuffer[18 + 3 * i + 1]) / 255.0f;
+        const float b = static_cast<float>(uBuffer[18 + 3 * i + 2]) / 255.0f;
         colors[i] = FLinearColor(r, g, b);
     }
 
     // 8 * 2 devices with dimmer and color idx
     for (int32 i = 0; i < lights.Num(); i++) {
         FControlledLight& l = lights[i];
-        l.dimmer = static_cast<float>(uBuffer[18 + 3 * 7 + 2 * i + 0]) / 255.0f;
-        l.colorIdx = static_cast<int>(uBuffer[18 + 3 * 7 + 2 * i + 1]) / 36;
-        if (l.colorIdx < 0) {
-            l.colorIdx = 0;
-        }
-        if (l.colorIdx > 6) {
-            l.colorIdx = 6;
-        }
+        const unsigned char dmxDimmer = uBuffer[18 + 3 * 7 + 2 * i + 0];
+        const unsigned char dmxColorIdx = uBuffer[18 + 3 * 7 + 2 * i + 1];
+
+        l.enabled_target = dmxDimmer > 0;
+        l.dimmer_target = static_cast<float>(dmxDimmer > 0 ? dmxDimmer - 1 : 0) / 254.0f;
+        l.colorIdx_target = FMath::Clamp(static_cast<int32>(dmxColorIdx) / 36, 0, 6);
     }
 }
