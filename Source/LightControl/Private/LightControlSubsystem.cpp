@@ -1,7 +1,5 @@
 #include "LightControlSubsystem.h"
 
-#include <string>
-
 #include "FGGameState.h"
 
 ALightControlSubsystem::ALightControlSubsystem()
@@ -10,31 +8,29 @@ ALightControlSubsystem::ALightControlSubsystem()
     SetActorTickEnabled(true);
     socket = nullptr;
     receiver = nullptr;
-    for (int i = 0; i < 7; i++) {
-        colors[i] = FLinearColor(0.0f, 0.0f, 0.0f);
-    }
-    for (int i = 0; i < 8; i++) {
-        lightActors[i] = nullptr;
-        dimmers[i] = 1.0f;
-        colorIdxs[i] = 0;
-    }
+    FLinearColor col(0.0f, 0.0f, 0.0f);
+    colors.Init(col, 7);
 }
 
 void ALightControlSubsystem::BeginPlay()
 {
     Super::BeginPlay();
-    UE_LOG(LogTemp, Warning, TEXT("########## ALightControlSubsystem::BeginPlay"));
 
-    std::vector <std::string> lightNames{
-        "Build_FloodlightPole_C_2147397259",
-        "Build_FloodlightPole_C_2147397502",
-        "Build_FloodlightWall_C_2147393450",
-        "Build_FloodlightWall_C_2147393322",
-        "Build_StreetLight_C_2147390838",
-        "Build_StreetLight_C_2147389914",
-        "Build_StreetLight_C_2147390022",
-        "Build_StreetLight_C_2147391627",
+    TArray<FString> lightNames{
+        TEXT("Build_FloodlightPole_C_2147397259"),
+        TEXT("Build_FloodlightPole_C_2147397502"),
+        TEXT("Build_FloodlightWall_C_2147393450"),
+        TEXT("Build_FloodlightWall_C_2147393322"),
+        TEXT("Build_StreetLight_C_2147390838"),
+        TEXT("Build_StreetLight_C_2147389914"),
+        TEXT("Build_StreetLight_C_2147390022"),
+        TEXT("Build_StreetLight_C_2147391627"),
     };
+
+    int32 lightNum = lightNames.Num();
+    UE_LOG(LogTemp, Warning, TEXT("#### ALightControlSubsystem: Init %i lights"), lightNum);
+    FControlledLight initLight;
+    lights.Init(initLight, lightNum);
 
     TArray<AActor*> FoundLightSourceActors;
     UGameplayStatics::GetAllActorsOfClass(GetWorld(), AFGBuildableLightSource::StaticClass(), FoundLightSourceActors);
@@ -42,13 +38,16 @@ void ALightControlSubsystem::BeginPlay()
     for (AActor* TActor : FoundLightSourceActors) {
         AFGBuildableLightSource* lightSource = Cast<AFGBuildableLightSource>(TActor);
         if (lightSource != nullptr) {
-            std::string name = std::string(TCHAR_TO_UTF8(*lightSource->GetName()));
-            for (int i = 0; i < 8; i++) {
-                if (name == lightNames[i]) {
-                    lightActors[i] = lightSource;
+            for (int32 i = 0; i < lightNum; i++) {
+                if (lightSource->GetName() == lightNames[i]) {
+                    lights[i].lightActor = lightSource;
                 }
             }
         }
+    }
+
+    for (int i = 0; i < lightNum; i++) {
+        UE_LOG(LogTemp, Warning, TEXT("#### ALightControlSubsystem: Light actor ptr: %u"), lights[i].lightActor);
     }
 
     socket = FUdpSocketBuilder(TEXT("Art-Net"))
@@ -69,7 +68,9 @@ void ALightControlSubsystem::BeginPlay()
 void ALightControlSubsystem::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
     Super::EndPlay(EndPlayReason);
-    UE_LOG(LogTemp, Warning, TEXT("########## ALightControlSubsystem::EndPlay"));
+    receiver->Stop();
+    lights.Empty();
+    UE_LOG(LogTemp, Warning, TEXT("#### ALightControlSubsystem::EndPlay"));
 }
 
 void ALightControlSubsystem::Tick(float DeltaSeconds)
@@ -83,17 +84,17 @@ void ALightControlSubsystem::Tick(float DeltaSeconds)
     }
 
     // Set Actors
-    for (int i = 0; i < 8; i++) {
-        if (lightActors[i] != nullptr) {
+    for (FControlledLight& l : lights) {
+        if (l.lightActor != nullptr) {
             FLightSourceControlData data;
-            data.ColorSlotIndex = colorIdxs[i];
-            data.Intensity = dimmers[i];
+            data.ColorSlotIndex = l.colorIdx;
+            data.Intensity = l.dimmer;
             data.IsTimeOfDayAware = false;
-            lightActors[i]->SetLightControlData(data);
-            if (dimmers[i] == 0.0f) {
-                lightActors[i]->SetLightEnabled(false);
+            l.lightActor->SetLightControlData(data);
+            if (l.dimmer == 0.0f) {
+                l.lightActor->SetLightEnabled(false);
             } else {
-                lightActors[i]->SetLightEnabled(true);
+                l.lightActor->SetLightEnabled(true);
             }
         }
     }
@@ -139,16 +140,15 @@ void ALightControlSubsystem::Receive(const FArrayReaderPtr& data, const FIPv4End
     }
 
     // 8 * 2 devices with dimmer and color idx
-    for (int i = 0; i < 8; i++) {
-        dimmers[i] = static_cast<float>(uBuffer[18 + 3 * 7 + 2 * i + 0]) / 255.0f;
-        colorIdxs[i] = static_cast<int>(uBuffer[18 + 3 * 7 + 2 * i + 1]) / 36;
-        if (colorIdxs[i] < 0) {
-            colorIdxs[i] = 0;
+    for (int32 i = 0; i < lights.Num(); i++) {
+        FControlledLight& l = lights[i];
+        l.dimmer = static_cast<float>(uBuffer[18 + 3 * 7 + 2 * i + 0]) / 255.0f;
+        l.colorIdx = static_cast<int>(uBuffer[18 + 3 * 7 + 2 * i + 1]) / 36;
+        if (l.colorIdx < 0) {
+            l.colorIdx = 0;
         }
-        if (colorIdxs[i] > 6) {
-            colorIdxs[i] = 6;
+        if (l.colorIdx > 6) {
+            l.colorIdx = 6;
         }
     }
-
-    UE_LOG(LogTemp, Warning, TEXT("########## Network data: %i"), DataLength);
 }

@@ -9,6 +9,20 @@
 
 #include "LightControlSubsystem.generated.h"
 
+USTRUCT()
+struct FControlledLight
+{
+    GENERATED_BODY()
+
+    FControlledLight() : lightActor(nullptr), dimmer(0.0f), colorIdx(0) {}
+
+    AFGBuildableLightSource* lightActor;
+
+    float dimmer;
+
+    int32 colorIdx;
+};
+
 /**
  *
  */
@@ -31,9 +45,6 @@ protected:
     FSocket* socket;
     FUdpSocketReceiver* receiver;
 
-    FLinearColor colors[7];
-
-    AFGBuildableLightSource* lightActors[8];
-    float dimmers[8];
-    int colorIdxs[8];
+    TArray<FLinearColor> colors;
+    TArray<FControlledLight> lights;
 };
