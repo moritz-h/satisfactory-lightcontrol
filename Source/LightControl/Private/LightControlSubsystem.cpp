@@ -92,13 +92,13 @@ void ALightControlSubsystem::Tick(float DeltaSeconds)
     for (FControlledLight& l : lights) {
         if (l.lightActor != nullptr) {
             const bool enabled = l.enabled_target;
-            if (l.enabled_actual != enabled) {
+            if (/* TODO force update every frame? */ true || l.enabled_actual != enabled) {
                 l.lightActor->SetLightEnabled(enabled);
                 l.enabled_actual = enabled;
             }
             const int32 colorIdx = l.colorIdx_target;
             const int dimmer = l.dimmer_target;
-            if (l.colorIdx_actual != colorIdx || l.dimmer_actual != dimmer) {
+            if (/* TODO force update every frame? */ true || l.colorIdx_actual != colorIdx || l.dimmer_actual != dimmer) {
                 FLightSourceControlData data;
                 data.ColorSlotIndex = colorIdx;
                 data.Intensity = dimmer;
