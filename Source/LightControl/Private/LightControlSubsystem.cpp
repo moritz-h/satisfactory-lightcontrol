@@ -2,6 +2,9 @@
 
 #include "FGGameState.h"
 
+#include "Configuration/ModConfiguration.h"
+#include "Util/RuntimeBlueprintFunctionLibrary.h"
+
 ALightControlSubsystem::ALightControlSubsystem()
 {
     PrimaryActorTick.bCanEverTick = true;
@@ -16,18 +19,20 @@ void ALightControlSubsystem::BeginPlay()
 {
     Super::BeginPlay();
 
-    TArray<FString> lightNames{
-        TEXT("Build_FloodlightPole_C_2147397259"),
-        TEXT("Build_FloodlightPole_C_2147397502"),
-        TEXT("Build_FloodlightWall_C_2147393450"),
-        TEXT("Build_FloodlightWall_C_2147393322"),
-        TEXT("Build_StreetLight_C_2147390838"),
-        TEXT("Build_StreetLight_C_2147389914"),
-        TEXT("Build_StreetLight_C_2147390022"),
-        TEXT("Build_StreetLight_C_2147391627"),
-    };
+    const FConfigId configId{"LightControl", ""};
+    UConfigPropertySection* lightControlConfiguration = Cast<UConfigPropertySection>(URuntimeBlueprintFunctionLibrary::GetModConfigurationProperty(configId));
+    UConfigPropertyArray* propertyArray = Cast<UConfigPropertyArray>(URuntimeBlueprintFunctionLibrary::Conv_ConfigPropertySectionToConfigProperty(lightControlConfiguration, "LightActors"));
+    TArray<UConfigProperty*> propertyArrayValues = URuntimeBlueprintFunctionLibrary::Conv_ConfigPropertyArrayToConfigPropertyArray(propertyArray);
 
-    const int32 lightNum = lightNames.Num();
+    const int32 lightNum = propertyArrayValues.Num();
+
+    TArray<FString> lightNames;
+    lightNames.Init(TEXT(""), lightNum);
+
+    for (int32 i = 0; i < lightNum; i++) {
+        lightNames[i] = Cast<UConfigPropertyString>(propertyArrayValues[i])->Value;
+    }
+
     UE_LOG(LogTemp, Warning, TEXT("#### ALightControlSubsystem: Init %i lights"), lightNum);
     const FControlledLight initLight;
     lights.Init(initLight, lightNum);
@@ -47,7 +52,7 @@ void ALightControlSubsystem::BeginPlay()
     }
 
     for (int i = 0; i < lightNum; i++) {
-        UE_LOG(LogTemp, Warning, TEXT("#### ALightControlSubsystem: Light actor ptr: %u"), lights[i].lightActor);
+        UE_LOG(LogTemp, Warning, TEXT("#### ALightControlSubsystem: Light actor ptr: %u (name: %s)"), lights[i].lightActor, *lightNames[i]);
     }
 
     socket = FUdpSocketBuilder(TEXT("Art-Net"))
