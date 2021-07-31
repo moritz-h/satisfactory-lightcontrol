@@ -33,7 +33,7 @@ void ALightControlSubsystem::BeginPlay()
         lightNames[i] = Cast<UConfigPropertyString>(propertyArrayValues[i])->Value;
     }
 
-    UE_LOG(LogTemp, Warning, TEXT("#### ALightControlSubsystem: Init %i lights"), lightNum);
+    UE_LOG(LogTemp, Warning, TEXT("LightControlSubsystem: Init %i lights"), lightNum);
     const FControlledLight initLight;
     lights.Init(initLight, lightNum);
 
@@ -52,7 +52,7 @@ void ALightControlSubsystem::BeginPlay()
     }
 
     for (int i = 0; i < lightNum; i++) {
-        UE_LOG(LogTemp, Warning, TEXT("#### ALightControlSubsystem: Light actor ptr: %u (name: %s)"), lights[i].lightActor, *lightNames[i]);
+        UE_LOG(LogTemp, Warning, TEXT("LightControlSubsystem: Light actor ptr: %u (name: %s)"), lights[i].lightActor, *lightNames[i]);
     }
 
     socket = FUdpSocketBuilder(TEXT("Art-Net"))
@@ -75,7 +75,7 @@ void ALightControlSubsystem::EndPlay(const EEndPlayReason::Type EndPlayReason)
     Super::EndPlay(EndPlayReason);
     receiver->Stop();
     lights.Empty();
-    UE_LOG(LogTemp, Warning, TEXT("#### ALightControlSubsystem::EndPlay"));
+    UE_LOG(LogTemp, Warning, TEXT("LightControlSubsystem::EndPlay: Done"));
 }
 
 void ALightControlSubsystem::Tick(float DeltaSeconds)
@@ -113,34 +113,35 @@ void ALightControlSubsystem::Tick(float DeltaSeconds)
 
 void ALightControlSubsystem::Receive(const FArrayReaderPtr& data, const FIPv4Endpoint& Endpoint)
 {
-    const char* buffer = reinterpret_cast<const char*>(data->GetData());
     int32 size = data->Num();
+    const char* buffer = reinterpret_cast<const char*>(data->GetData());
+    const unsigned char* uBuffer = reinterpret_cast<const unsigned char*>(buffer);
 
     if (size < 10 || strncmp(&buffer[0], "Art-Net", 8) != 0) {
         return;
     }
-    const int OpCode = (buffer[9] << 8) + buffer[8];
+    const int OpCode = (uBuffer[9] << 8) + uBuffer[8];
 
     if (OpCode != 0x5000 || size <= 18) {
         return;
     }
 
-    const int8 ProtVerHi = buffer[10];
-    const int8 ProtVerLo = buffer[11];
-    const int8 Sequence = buffer[12];
-    const int8 Physical = buffer[13];
-    const int8 SubUni = buffer[14];
-    const int8 Net = buffer[15];
-    if (SubUni != 0 || Net != 0) {
+    // const int8 ProtVerHi = uBuffer[10];
+    // const int8 ProtVerLo = uBuffer[11];
+    // const int8 Sequence = uBuffer[12];
+    // const int8 Physical = uBuffer[13];
+    const int8 Universe = uBuffer[14] & 0xF;
+    const int8 SubNet = (uBuffer[14] >> 4) & 0xF;
+    const int8 Net = uBuffer[15] & 0x7F;
+
+    if (Net!= 0 || SubNet != 0 || Universe != 0) {
         return;
     }
 
-    const int DataLength = ((buffer[16] << 8) | buffer[17]);
+    const int DataLength = ((uBuffer[16] << 8) | uBuffer[17]);
     if (DataLength < 2 || DataLength > 512 || size < 18 + DataLength) {
         return;
     }
-
-    const unsigned char* uBuffer = reinterpret_cast<const unsigned char*>(buffer);
 
     // 7 * 3 color channels
     for (int i = 0; i < 7; i++) {
