@@ -2,6 +2,12 @@
 
 Mod for the game Satisfactory by Coffee Stain Studios to control lights with ArtNet.
 
+## Light show
+
+Here, a short example light show made with the light control software [DMXControl](https://www.dmxcontrol.de/) and this mod is shown:  
+[![light show demo](https://img.youtube.com/vi/rR7Teg_T_gs/0.jpg)](https://www.youtube.com/watch?v=rR7Teg_T_gs)  
+[https://www.youtube.com/watch?v=rR7Teg_T_gs](https://www.youtube.com/watch?v=rR7Teg_T_gs)
+
 ## Building
 
 This mod can be build by adding it as a plugin to the [SatisfactoryModLoader](https://github.com/satisfactorymodding/SatisfactoryModLoader).
