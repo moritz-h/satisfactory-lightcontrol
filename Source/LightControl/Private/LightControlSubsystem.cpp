@@ -97,7 +97,7 @@ void ALightControlSubsystem::Tick(float DeltaSeconds)
                 l.enabled_actual = enabled;
             }
             const int32 colorIdx = l.colorIdx_target;
-            const int dimmer = l.dimmer_target;
+            const float dimmer = l.dimmer_target;
             if (/* TODO force update every frame? */ true || l.colorIdx_actual != colorIdx || l.dimmer_actual != dimmer) {
                 FLightSourceControlData data;
                 data.ColorSlotIndex = colorIdx;
