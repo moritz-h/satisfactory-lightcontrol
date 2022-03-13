@@ -5,12 +5,19 @@
 #include "Configuration/ModConfiguration.h"
 #include "Util/RuntimeBlueprintFunctionLibrary.h"
 
-ALightControlSubsystem::ALightControlSubsystem()
+ALightControlSubsystem::ALightControlSubsystem() :
+    ArtNet_Net(0),
+    ArtNet_SubNet(0),
+    ColorUniverse(0),
+    ColorChannel(1)
 {
     PrimaryActorTick.bCanEverTick = true;
     SetActorTickEnabled(true);
     socket = nullptr;
     receiver = nullptr;
+
+    DmxData.Init(0, 16 * 512);
+
     const FLinearColor col(0.0f, 0.0f, 0.0f);
     colors.Init(col, 7);
 }
@@ -19,41 +26,7 @@ void ALightControlSubsystem::BeginPlay()
 {
     Super::BeginPlay();
 
-    const FConfigId configId{"LightControl", ""};
-    UConfigPropertySection* lightControlConfiguration = Cast<UConfigPropertySection>(URuntimeBlueprintFunctionLibrary::GetModConfigurationProperty(configId));
-    UConfigPropertyArray* propertyArray = Cast<UConfigPropertyArray>(URuntimeBlueprintFunctionLibrary::Conv_ConfigPropertySectionToConfigProperty(lightControlConfiguration, "LightActors"));
-    TArray<UConfigProperty*> propertyArrayValues = URuntimeBlueprintFunctionLibrary::Conv_ConfigPropertyArrayToConfigPropertyArray(propertyArray);
-
-    const int32 lightNum = propertyArrayValues.Num();
-
-    TArray<FString> lightNames;
-    lightNames.Init(TEXT(""), lightNum);
-
-    for (int32 i = 0; i < lightNum; i++) {
-        lightNames[i] = Cast<UConfigPropertyString>(propertyArrayValues[i])->Value;
-    }
-
-    UE_LOG(LogTemp, Warning, TEXT("LightControlSubsystem: Init %i lights"), lightNum);
-    const FControlledLight initLight;
-    lights.Init(initLight, lightNum);
-
-    TArray<AActor*> FoundLightSourceActors;
-    UGameplayStatics::GetAllActorsOfClass(GetWorld(), AFGBuildableLightSource::StaticClass(), FoundLightSourceActors);
-
-    for (AActor* TActor : FoundLightSourceActors) {
-        AFGBuildableLightSource* lightSource = Cast<AFGBuildableLightSource>(TActor);
-        if (lightSource != nullptr) {
-            for (int32 i = 0; i < lightNum; i++) {
-                if (lightSource->GetName() == lightNames[i]) {
-                    lights[i].lightActor = lightSource;
-                }
-            }
-        }
-    }
-
-    for (int i = 0; i < lightNum; i++) {
-        UE_LOG(LogTemp, Warning, TEXT("LightControlSubsystem: Light actor ptr: %u (name: %s)"), lights[i].lightActor, *lightNames[i]);
-    }
+    UE_LOG(LogTemp, Warning, TEXT("LightControlSubsystem::BeginPlay: Start"));
 
     socket = FUdpSocketBuilder(TEXT("Art-Net"))
         .AsNonBlocking()
@@ -74,7 +47,6 @@ void ALightControlSubsystem::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
     Super::EndPlay(EndPlayReason);
     receiver->Stop();
-    lights.Empty();
     UE_LOG(LogTemp, Warning, TEXT("LightControlSubsystem::EndPlay: Done"));
 }
 
@@ -87,78 +59,55 @@ void ALightControlSubsystem::Tick(float DeltaSeconds)
     for (int i = 0; i < 7; i++) {
         gameState->Server_SetBuildableLightColorSlot(i, colors[i]);
     }
-
-    // Set Actors
-    for (FControlledLight& l : lights) {
-        if (l.lightActor != nullptr) {
-            const bool enabled = l.enabled_target;
-            if (/* TODO force update every frame? */ true || l.enabled_actual != enabled) {
-                l.lightActor->SetLightEnabled(enabled);
-                l.enabled_actual = enabled;
-            }
-            const int32 colorIdx = l.colorIdx_target;
-            const float dimmer = l.dimmer_target;
-            if (/* TODO force update every frame? */ true || l.colorIdx_actual != colorIdx || l.dimmer_actual != dimmer) {
-                FLightSourceControlData data;
-                data.ColorSlotIndex = colorIdx;
-                data.Intensity = dimmer;
-                data.IsTimeOfDayAware = false;
-                l.lightActor->SetLightControlData(data);
-                l.colorIdx_actual = colorIdx;
-                l.dimmer_actual = dimmer;
-            }
-        }
-    }
 }
 
 void ALightControlSubsystem::Receive(const FArrayReaderPtr& data, const FIPv4Endpoint& Endpoint)
 {
-    int32 size = data->Num();
-    const char* buffer = reinterpret_cast<const char*>(data->GetData());
-    const unsigned char* uBuffer = reinterpret_cast<const unsigned char*>(buffer);
+    const int32 size = data->Num();
+    const uint8* buffer = data->GetData();
 
-    if (size < 10 || strncmp(&buffer[0], "Art-Net", 8) != 0) {
-        return;
-    }
-    const int OpCode = (uBuffer[9] << 8) + uBuffer[8];
-
-    if (OpCode != 0x5000 || size <= 18) {
+    // 18 bytes ArtDmx packet header
+    if (size < 18) {
         return;
     }
 
-    // const int8 ProtVerHi = uBuffer[10];
-    // const int8 ProtVerLo = uBuffer[11];
-    // const int8 Sequence = uBuffer[12];
-    // const int8 Physical = uBuffer[13];
-    const int8 Universe = uBuffer[14] & 0xF;
-    const int8 SubNet = (uBuffer[14] >> 4) & 0xF;
-    const int8 Net = uBuffer[15] & 0x7F;
-
-    if (Net!= 0 || SubNet != 0 || Universe != 0) {
+    if (strncmp(reinterpret_cast<const char*>(buffer), "Art-Net", 8) != 0) {
         return;
     }
 
-    const int DataLength = ((uBuffer[16] << 8) | uBuffer[17]);
+    const int16 OpCode = (buffer[9] << 8) + buffer[8];
+    if (OpCode != 0x5000) {
+        return;
+    }
+
+    // const int8 ProtVerHi = buffer[10];
+    // const int8 ProtVerLo = buffer[11];
+    // const int8 Sequence = buffer[12];
+    // const int8 Physical = buffer[13];
+    const int8 Universe = buffer[14] & 0xF;
+    const int8 SubNet = (buffer[14] >> 4) & 0xF;
+    const int8 Net = buffer[15] & 0x7F;
+
+    if (Net != ArtNet_Net || SubNet != ArtNet_SubNet || Universe < 0 || Universe >= 16) {
+        return;
+    }
+
+    const int16 DataLength = ((buffer[16] << 8) | buffer[17]);
     if (DataLength < 2 || DataLength > 512 || size < 18 + DataLength) {
         return;
     }
 
-    // 7 * 3 color channels
-    for (int i = 0; i < 7; i++) {
-        const float r = static_cast<float>(uBuffer[18 + 3 * i + 0]) / 255.0f;
-        const float g = static_cast<float>(uBuffer[18 + 3 * i + 1]) / 255.0f;
-        const float b = static_cast<float>(uBuffer[18 + 3 * i + 2]) / 255.0f;
-        colors[i] = FLinearColor(r, g, b);
-    }
+    // Copy to DmxData storage
+    FMemory::Memcpy(DmxData.GetData() + Universe * 512, buffer + 18, DataLength);
 
-    // 8 * 2 devices with dimmer and color idx
-    for (int32 i = 0; i < lights.Num(); i++) {
-        FControlledLight& l = lights[i];
-        const unsigned char dmxDimmer = uBuffer[18 + 3 * 7 + 2 * i + 0];
-        const unsigned char dmxColorIdx = uBuffer[18 + 3 * 7 + 2 * i + 1];
-
-        l.enabled_target = dmxDimmer > 0;
-        l.dimmer_target = static_cast<float>(dmxDimmer > 0 ? dmxDimmer - 1 : 0) / 254.0f;
-        l.colorIdx_target = FMath::Clamp(static_cast<int32>(dmxColorIdx) / 36, 0, 6);
+    // Update light colors
+    if (Universe == ColorUniverse) {
+        // 7 * 3 color channels
+        for (int i = 0; i < 7; i++) {
+            const float r = static_cast<float>(GetDmxValue(ColorUniverse, ColorChannel + 3 * i + 0)) / 255.0f;
+            const float g = static_cast<float>(GetDmxValue(ColorUniverse, ColorChannel + 3 * i + 1)) / 255.0f;
+            const float b = static_cast<float>(GetDmxValue(ColorUniverse, ColorChannel + 3 * i + 2)) / 255.0f;
+            colors[i] = FLinearColor(r, g, b);
+        }
     }
 }
