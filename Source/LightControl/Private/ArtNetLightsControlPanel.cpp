@@ -6,7 +6,8 @@ AArtNetLightsControlPanel::AArtNetLightsControlPanel() :
     DefaultUniverse(0),
     DefaultChannel(0),
     LightControlSubsystem(nullptr),
-    isFirstTick(true)
+    isFirstTick(true),
+    time(0.0f)
 {
     PrimaryActorTick.bCanEverTick = true;
     SetActorTickEnabled(true);
@@ -36,15 +37,28 @@ void AArtNetLightsControlPanel::Tick(float DeltaSeconds)
         UpdateLights();
     }
 
+    time += DeltaSeconds;
+    bool blink = static_cast<int>(time * 2.0f) % 2 == 0;
+
     for (auto& Elem : LightsMap) {
         auto* lightActor = Elem.Key;
         auto& info = Elem.Value;
 
-        const uint8 dmxDimmer = LightControlSubsystem->GetDmxValue(info.Universe, info.Channel);
-        const uint8 dmxColorIdx = LightControlSubsystem->GetDmxValue(info.Universe, info.Channel + 1);
-        info.enabled_target = dmxDimmer > 0;
-        info.dimmer_target = static_cast<float>(dmxDimmer > 0 ? dmxDimmer - 1 : 0) / 254.0f;
-        info.colorIdx_target = FMath::Clamp(static_cast<int32>(dmxColorIdx) / 36, 0, 6);
+        if (!info.Highlight) {
+            const uint8 dmxDimmer = LightControlSubsystem->GetDmxValue(info.Universe, info.Channel);
+            const uint8 dmxColorIdx = LightControlSubsystem->GetDmxValue(info.Universe, info.Channel + 1);
+            info.enabled_target = dmxDimmer > 0;
+            info.dimmer_target = static_cast<float>(dmxDimmer > 0 ? dmxDimmer - 1 : 0) / 254.0f;
+            info.colorIdx_target = FMath::Clamp(static_cast<int32>(dmxColorIdx) / 36, 0, 6);
+        } else {
+            if (blink) {
+                info.enabled_target = true;
+                info.dimmer_target = 1.0f;
+                info.colorIdx_target = 0;
+            } else {
+                info.enabled_target = false;
+            }
+        }
 
         const bool enabled = info.enabled_target;
         if (/* TODO force update every frame? */ true || info.enabled_actual != enabled) {
@@ -81,7 +95,7 @@ void AArtNetLightsControlPanel::UpdateLights()
         if (oldInfo != nullptr) {
             LightsMap.Add(lightSource, *oldInfo);
         } else {
-            LightsMap.Add(lightSource, FLightSourceInfo(DefaultUniverse, DefaultChannel));
+            LightsMap.Add(lightSource, FLightSourceInfo(DefaultUniverse, DefaultChannel, lightSource->GetName()));
         }
     }
 }
@@ -91,9 +105,9 @@ TArray<AFGBuildableLightSource*> AArtNetLightsControlPanel::GetLights() const
     TArray<AFGBuildableLightSource*> lights;
     LightsMap.GetKeys(lights);
 
-    // Sort by display name
-    lights.Sort([](const AFGBuildableLightSource& A, const AFGBuildableLightSource& B) {
-        return A.mDisplayName.ToString() < B.mDisplayName.ToString();
+    // Sort by name
+    lights.Sort([this](const AFGBuildableLightSource& A, const AFGBuildableLightSource& B) {
+        return LightsMap[&A].Name < LightsMap[&B].Name;
     });
 
     return lights;

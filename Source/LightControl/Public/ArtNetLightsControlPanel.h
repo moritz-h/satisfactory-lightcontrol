@@ -15,6 +15,7 @@ struct FLightSourceInfo
     FLightSourceInfo() :
         Universe(0),
         Channel(1),
+        Highlight(false),
         enabled_actual(false),
         enabled_target(true),
         dimmer_actual(-1.0f),
@@ -22,9 +23,11 @@ struct FLightSourceInfo
         colorIdx_actual(-1),
         colorIdx_target(0) {}
 
-    FLightSourceInfo(int32 universe, int32 channel) :
+    FLightSourceInfo(int32 universe, int32 channel, const FString& name) :
         Universe(universe),
         Channel(channel),
+        Name(name),
+        Highlight(false),
         enabled_actual(false),
         enabled_target(true),
         dimmer_actual(-1.0f),
@@ -38,14 +41,20 @@ struct FLightSourceInfo
     UPROPERTY( SaveGame )
     int32 Channel;
 
+    UPROPERTY( SaveGame )
+    FString Name;
+
+    UPROPERTY( SaveGame )
+    bool Highlight;
+
     bool enabled_actual;
     bool enabled_target;
 
-    int32 colorIdx_actual;
-    int32 colorIdx_target;
-
     float dimmer_actual;
     float dimmer_target;
+
+    int32 colorIdx_actual;
+    int32 colorIdx_target;
 };
 
 UCLASS()
@@ -119,6 +128,40 @@ public:
         }
     }
 
+    UFUNCTION(BlueprintCallable, Category = "LightControl|ArtNetLightsControlPanel")
+    FString GetLightName(AFGBuildableLightSource* light) {
+        const auto* lightData = LightsMap.Find(light);
+        if (lightData != nullptr) {
+            return lightData->Name;
+        }
+        return FString();
+    }
+
+    UFUNCTION(BlueprintCallable, Category = "LightControl|ArtNetLightsControlPanel")
+    void SetLightName(AFGBuildableLightSource* light, const FString& name) {
+        auto* lightData = LightsMap.Find(light);
+        if (lightData != nullptr) {
+            lightData->Name = name;
+        }
+    }
+
+    UFUNCTION(BlueprintCallable, Category = "LightControl|ArtNetLightsControlPanel")
+    bool GetLightHighlight(AFGBuildableLightSource* light) {
+        const auto* lightData = LightsMap.Find(light);
+        if (lightData != nullptr) {
+            return lightData->Highlight;
+        }
+        return false;
+    }
+
+    UFUNCTION(BlueprintCallable, Category = "LightControl|ArtNetLightsControlPanel")
+    void SetLightHighlight(AFGBuildableLightSource* light, bool highlight) {
+        auto* lightData = LightsMap.Find(light);
+        if (lightData != nullptr) {
+            lightData->Highlight = highlight;
+        }
+    }
+
 protected:
     UPROPERTY( SaveGame )
     int32 DefaultUniverse;
@@ -132,4 +175,6 @@ protected:
     ALightControlSubsystem* LightControlSubsystem;
 
     bool isFirstTick;
+
+    float time;
 };
