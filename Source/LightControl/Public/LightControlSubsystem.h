@@ -56,6 +56,7 @@ public:
     UFUNCTION( BlueprintCallable, BlueprintPure = false, Category = "LightControl|LightControlSubsystem" )
     void SetColorUniverse(int32 universe) {
         ColorUniverse = FMath::Clamp(universe, 0, 16);
+        UpdateColors();
     }
 
     UFUNCTION( BlueprintCallable, BlueprintPure = false, Category = "LightControl|LightControlSubsystem" )
@@ -66,6 +67,7 @@ public:
     UFUNCTION( BlueprintCallable, BlueprintPure = false, Category = "LightControl|LightControlSubsystem" )
     void SetColorChannel(int32 channel) {
         ColorChannel = FMath::Clamp(channel, 1, 512);
+        UpdateColors();
     }
 
     FORCEINLINE uint8 GetDmxValue(int32 universe, int32 channel) const {
@@ -78,6 +80,8 @@ public:
     void Receive(const FArrayReaderPtr& data, const FIPv4Endpoint& Endpoint);
 
 protected:
+    void UpdateColors();
+
     UPROPERTY( SaveGame )
     int32 ArtNet_Net;
 

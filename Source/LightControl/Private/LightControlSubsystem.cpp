@@ -102,12 +102,17 @@ void ALightControlSubsystem::Receive(const FArrayReaderPtr& data, const FIPv4End
 
     // Update light colors
     if (Universe == ColorUniverse) {
-        // 7 * 3 color channels
-        for (int i = 0; i < 7; i++) {
-            const float r = static_cast<float>(GetDmxValue(ColorUniverse, ColorChannel + 3 * i + 0)) / 255.0f;
-            const float g = static_cast<float>(GetDmxValue(ColorUniverse, ColorChannel + 3 * i + 1)) / 255.0f;
-            const float b = static_cast<float>(GetDmxValue(ColorUniverse, ColorChannel + 3 * i + 2)) / 255.0f;
-            colors[i] = FLinearColor(r, g, b);
-        }
+        UpdateColors();
+    }
+}
+
+void ALightControlSubsystem::UpdateColors()
+{
+    // 7 * 3 color channels
+    for (int i = 0; i < 7; i++) {
+        const float r = static_cast<float>(GetDmxValue(ColorUniverse, ColorChannel + 3 * i + 0)) / 255.0f;
+        const float g = static_cast<float>(GetDmxValue(ColorUniverse, ColorChannel + 3 * i + 1)) / 255.0f;
+        const float b = static_cast<float>(GetDmxValue(ColorUniverse, ColorChannel + 3 * i + 2)) / 255.0f;
+        colors[i] = FLinearColor(r, g, b);
     }
 }
