@@ -1,6 +1,7 @@
 #include "LightControlSubsystem.h"
 
 #include "FGGameState.h"
+#include "FGWorldSettings.h"
 
 #include "Configuration/ModConfiguration.h"
 #include "Util/RuntimeBlueprintFunctionLibrary.h"
@@ -9,7 +10,8 @@ ALightControlSubsystem::ALightControlSubsystem() :
     ArtNet_Net(0),
     ArtNet_SubNet(0),
     ColorUniverse(0),
-    ColorChannel(1)
+    ColorChannel(1),
+    colorsNeedUpdate(false)
 {
     PrimaryActorTick.bCanEverTick = true;
     SetActorTickEnabled(true);
@@ -17,9 +19,6 @@ ALightControlSubsystem::ALightControlSubsystem() :
     receiver = nullptr;
 
     DmxData.Init(0, 16 * 512);
-
-    const FLinearColor col(0.0f, 0.0f, 0.0f);
-    colors.Init(col, 7);
 }
 
 void ALightControlSubsystem::BeginPlay()
@@ -27,6 +26,10 @@ void ALightControlSubsystem::BeginPlay()
     Super::BeginPlay();
 
     UE_LOG(LogTemp, Warning, TEXT("LightControlSubsystem::BeginPlay: Start"));
+
+    auto* buildableSubsystem = Cast<AFGWorldSettings>(GetWorld()->GetWorldSettings())->GetBuildableSubsystem();
+    colors = buildableSubsystem->GetBuildableLightColorSlots();
+    UE_LOG(LogTemp, Warning, TEXT("LightControlSubsystem: Init with %i colors."), buildableSubsystem->GetNumBuildableLightColorSlots());
 
     socket = FUdpSocketBuilder(TEXT("Art-Net"))
         .AsNonBlocking()
@@ -55,9 +58,11 @@ void ALightControlSubsystem::Tick(float DeltaSeconds)
     Super::Tick(DeltaSeconds);
 
     // Set colors
-    auto gameState = GetWorld()->GetGameState<AFGGameState>();
-    for (int i = 0; i < 7; i++) {
-        gameState->Server_SetBuildableLightColorSlot(i, colors[i]);
+    if (colorsNeedUpdate.AtomicSet(false)) {
+        auto* gameState = GetWorld()->GetGameState<AFGGameState>();
+        for (int i = 0; i < colors.Num(); i++) {
+            gameState->Server_SetBuildableLightColorSlot(i, colors[i]);
+        }
     }
 }
 
@@ -108,11 +113,12 @@ void ALightControlSubsystem::Receive(const FArrayReaderPtr& data, const FIPv4End
 
 void ALightControlSubsystem::UpdateColors()
 {
-    // 7 * 3 color channels
-    for (int i = 0; i < 7; i++) {
+    // 3 color channels per light
+    for (int i = 0; i < colors.Num(); i++) {
         const float r = static_cast<float>(GetDmxValue(ColorUniverse, ColorChannel + 3 * i + 0)) / 255.0f;
         const float g = static_cast<float>(GetDmxValue(ColorUniverse, ColorChannel + 3 * i + 1)) / 255.0f;
         const float b = static_cast<float>(GetDmxValue(ColorUniverse, ColorChannel + 3 * i + 2)) / 255.0f;
         colors[i] = FLinearColor(r, g, b);
     }
+    colorsNeedUpdate = true;
 }

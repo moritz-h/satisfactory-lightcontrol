@@ -77,6 +77,10 @@ public:
         return 0;
     }
 
+    FORCEINLINE int32 GetNumColors() const {
+        return colors.Num();
+    }
+
     void Receive(const FArrayReaderPtr& data, const FIPv4Endpoint& Endpoint);
 
 protected:
@@ -100,4 +104,5 @@ protected:
     TArray<uint8> DmxData;
 
     TArray<FLinearColor> colors;
+    FThreadSafeBool colorsNeedUpdate;
 };

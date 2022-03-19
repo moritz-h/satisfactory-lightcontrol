@@ -40,6 +40,9 @@ void AArtNetLightsControlPanel::Tick(float DeltaSeconds)
     time += DeltaSeconds;
     bool blink = static_cast<int>(time * 2.0f) % 2 == 0;
 
+    const int32 NumColors = LightControlSubsystem->GetNumColors();
+    const int32 ColorsDmxRange = 255 / NumColors;
+
     for (auto& Elem : LightsMap) {
         auto* lightActor = Elem.Key;
         auto& info = Elem.Value;
@@ -49,7 +52,7 @@ void AArtNetLightsControlPanel::Tick(float DeltaSeconds)
             const uint8 dmxColorIdx = LightControlSubsystem->GetDmxValue(info.Universe, info.Channel + 1);
             info.enabled_target = dmxDimmer > 0;
             info.dimmer_target = static_cast<float>(dmxDimmer > 0 ? dmxDimmer - 1 : 0) / 254.0f;
-            info.colorIdx_target = FMath::Clamp(static_cast<int32>(dmxColorIdx) / 36, 0, 6);
+            info.colorIdx_target = FMath::Clamp(static_cast<int32>(dmxColorIdx) / ColorsDmxRange, 0, NumColors - 1);
         } else {
             if (blink) {
                 info.enabled_target = true;
