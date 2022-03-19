@@ -98,9 +98,17 @@ void AArtNetLightsControlPanel::UpdateLights()
         const auto* oldInfo = OldLightsMap.Find(lightSource);
         if (oldInfo != nullptr) {
             LightsMap.Add(lightSource, *oldInfo);
+            OldLightsMap.Remove(lightSource);
         } else {
             LightsMap.Add(lightSource, FLightSourceInfo(DefaultUniverse, DefaultChannel, lightSource->GetName()));
         }
+    }
+
+    // It may is kind of unexpected that the ArtNetLightsControlPanel could disable a light completely, especially
+    // because a regular Lights Control Panel cannot (re)enable it remotely. Therefore, enable it on disconnect.
+    // UpdateLights() is also called on dismantling the control panel itself.
+    for (auto& lightSource : OldLightsMap) {
+        lightSource.Key->SetLightEnabled(true);
     }
 }
 
