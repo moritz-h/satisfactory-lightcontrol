@@ -1,5 +1,6 @@
 #include "ArtNetLightsControlPanel.h"
 
+#include "LogLightControl.h"
 #include "Subsystem/SubsystemActorManager.h"
 
 AArtNetLightsControlPanel::AArtNetLightsControlPanel() :
@@ -17,12 +18,12 @@ void AArtNetLightsControlPanel::BeginPlay()
 {
     Super::BeginPlay();
 
-    UE_LOG(LogTemp, Warning, TEXT("AArtNetLightsControlPanel: BeginPlay."));
+    UE_LOG(LogLightControl, Warning, TEXT("AArtNetLightsControlPanel: BeginPlay."));
     USubsystemActorManager* SubsystemActorManager = GetWorld()->GetSubsystem<USubsystemActorManager>();
     if (SubsystemActorManager) {
         LightControlSubsystem = SubsystemActorManager->GetSubsystemActor<ALightControlSubsystem>();
     } else {
-        UE_LOG(LogTemp, Warning, TEXT("AArtNetLightsControlPanel: SubsystemActorManager missing."));
+        UE_LOG(LogLightControl, Warning, TEXT("AArtNetLightsControlPanel: SubsystemActorManager missing."));
     }
 }
 
@@ -86,7 +87,7 @@ void AArtNetLightsControlPanel::UpdateLights()
 {
     TArray<AFGBuildable*>& connectedLights = GetControlledBuildables(AFGBuildableLightSource::StaticClass());
 
-    UE_LOG(LogTemp, Warning, TEXT("AArtNetLightsControlPanel: Update with %i connected lights."), connectedLights.Num());
+    UE_LOG(LogLightControl, Warning, TEXT("AArtNetLightsControlPanel: Update with %i connected lights."), connectedLights.Num());
 
     TMap<AFGBuildableLightSource*, FLightSourceInfo> OldLightsMap;
     Swap(LightsMap, OldLightsMap);

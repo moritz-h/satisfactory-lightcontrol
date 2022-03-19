@@ -1,9 +1,9 @@
 #include "LightControlSubsystem.h"
 
+#include "Configuration/ModConfiguration.h"
 #include "FGGameState.h"
 #include "FGWorldSettings.h"
-
-#include "Configuration/ModConfiguration.h"
+#include "LogLightControl.h"
 #include "Util/RuntimeBlueprintFunctionLibrary.h"
 
 ALightControlSubsystem::ALightControlSubsystem() :
@@ -25,11 +25,11 @@ void ALightControlSubsystem::BeginPlay()
 {
     Super::BeginPlay();
 
-    UE_LOG(LogTemp, Warning, TEXT("LightControlSubsystem::BeginPlay: Start"));
+    UE_LOG(LogLightControl, Warning, TEXT("LightControlSubsystem::BeginPlay: Start"));
 
     auto* buildableSubsystem = Cast<AFGWorldSettings>(GetWorld()->GetWorldSettings())->GetBuildableSubsystem();
     colors = buildableSubsystem->GetBuildableLightColorSlots();
-    UE_LOG(LogTemp, Warning, TEXT("LightControlSubsystem: Init with %i colors."), buildableSubsystem->GetNumBuildableLightColorSlots());
+    UE_LOG(LogLightControl, Warning, TEXT("LightControlSubsystem: Init with %i colors."), buildableSubsystem->GetNumBuildableLightColorSlots());
 
     socket = FUdpSocketBuilder(TEXT("Art-Net"))
         .AsNonBlocking()
@@ -50,7 +50,7 @@ void ALightControlSubsystem::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
     Super::EndPlay(EndPlayReason);
     receiver->Stop();
-    UE_LOG(LogTemp, Warning, TEXT("LightControlSubsystem::EndPlay: Done"));
+    UE_LOG(LogLightControl, Warning, TEXT("LightControlSubsystem::EndPlay: Done"));
 }
 
 void ALightControlSubsystem::Tick(float DeltaSeconds)
