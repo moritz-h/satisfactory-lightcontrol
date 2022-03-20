@@ -1,6 +1,6 @@
 # SatisfactoryLightControlMod
 
-Mod for the game Satisfactory by Coffee Stain Studios to control lights with ArtNet.
+Mod for the game [Satisfactory](https://www.satisfactorygame.com/) by Coffee Stain Studios to control lights with [Art-Net](https://en.wikipedia.org/wiki/Art-Net).
 
 ## Light Show Demo
 
@@ -17,56 +17,65 @@ More details are available in the [modding documentation](https://docs.ficsit.ap
 
 ## Usage
 
-The actor names of the controlled lights must be defined before a savegame is loaded.
-The values can be stored in the config file `<Satisfactory-Install-Dir>/FactoryGame/Configs/LightControl.cfg` or set within the main menu of the game.
+This mod adds an "Art-Net Lights Control Panel" building to the game.
+It is available in the AWESOME Shop when the regular Lights Control Panel is unlocked.
+The control panel will receive Art-Net data from an external light control software.
+All lights connected to the control panel can be configured within the control panel UI:
 
-The light names need to be determined from a savegame (i.e. using a savegame editor) and must be specified in the following form:
-```
-{
-    "LightActors": [
-        "Build_CeilingLight_C_1234567890",
-        "Build_FloodlightPole_C_1234567890",
-        "Build_FloodlightWall_C_1234567890",
-        "Build_StreetLight_C_1234567890"
-    ],
-    "SML_ModVersion_DoNotChange": "1.0.0"
-}
-```
+![Art-Net Lights Control Panel UI](Docs/ControlPanelUI.png)
 
-The mod receives ArtNet packets over the network on:
-- Net: 0
-- SubNet: 0
-- Universe: 0
+At the top are general settings to configure the Net and Sub-Net where the external light control software sends Art-Net data.
+Below the start address of the 7 global color channels can be configured, as well as a default start address which will be set as the initial value to all newly connected lights.
 
-The DMX channels are defined according to the following table:
+Please note, that the 7 color slots are a global game setting and shared between all lights and lights control panels.
+A detailed description of the DMX channels can be found in the table below.
 
-| DMX Channel | Function                                       |
-| -----------:| ---------------------------------------------- |
-|          1  | Red value of global color slot 0               |
-|          2  | Green value of global color slot 0             |
-|          3  | Blue value of global color slot 0              |
-|          4  | Red value of global color slot 1               |
-|          5  | Green value of global color slot 1             |
-|          6  | Blue value of global color slot 1              |
-|          7  | Red value of global color slot 2               |
-|          8  | Green value of global color slot 2             |
-|          9  | Blue value of global color slot 2              |
-|         10  | Red value of global color slot 3               |
-|         11  | Green value of global color slot 3             |
-|         12  | Blue value of global color slot 3              |
-|         13  | Red value of global color slot 4               |
-|         14  | Green value of global color slot 4             |
-|         15  | Blue value of global color slot 4              |
-|         16  | Red value of global color slot 5               |
-|         17  | Green value of global color slot 5             |
-|         18  | Blue value of global color slot 5              |
-|         19  | Red value of global color slot 6               |
-|         20  | Green value of global color slot 6             |
-|         21  | Blue value of global color slot 6              |
-|         22  | Dimmer of the first light in the list          |
-|         23  | Color slot idx of the first light in the list  |
-|         24  | Dimmer of the second light in the list         |
-|         25  | Color slot idx if the second light in the list |
-|        ...  | ...                                            |
+Below the general settings is a list of all lights connected to the current Art-Net Lights Control Panel.
+On the left is a text box, where it is possible to give each light a meaningful description.
+Next to it is a checkbox. If it is checked the light will start blinking.
+This allows to easily find a connection between the actual light and the name in the list.
+On the right, the start address of each light can be configured. Each light has two channels, a dimmer and a color slot index.
+A detailed description is in the table below.
 
-DMX value to color slot idx mapping follows the following formula: `clamp(dmxValue / 36, 0, 6)`.
+### Color Channel Table
+
+| Channel | Function                        |
+| -------:| ------------------------------- |
+|      1  | Color Slot 1 - Red (0 - 100%)   |
+|      2  | Color Slot 1 - Green (0 - 100%) |
+|      3  | Color Slot 1 - Blue (0 - 100%)  |
+|      4  | Color Slot 2 - Red (0 - 100%)   |
+|      5  | Color Slot 2 - Green (0 - 100%) |
+|      6  | Color Slot 2 - Blue (0 - 100%)  |
+|      7  | Color Slot 3 - Red (0 - 100%)   |
+|      8  | Color Slot 3 - Green (0 - 100%) |
+|      9  | Color Slot 3 - Blue (0 - 100%)  |
+|     10  | Color Slot 4 - Red (0 - 100%)   |
+|     11  | Color Slot 4 - Green (0 - 100%) |
+|     12  | Color Slot 4 - Blue (0 - 100%)  |
+|     13  | Color Slot 5 - Red (0 - 100%)   |
+|     14  | Color Slot 5 - Green (0 - 100%) |
+|     15  | Color Slot 5 - Blue (0 - 100%)  |
+|     16  | Color Slot 6 - Red (0 - 100%)   |
+|     17  | Color Slot 6 - Green (0 - 100%) |
+|     18  | Color Slot 6 - Blue (0 - 100%)  |
+|     19  | Color Slot 7 - Red (0 - 100%)   |
+|     20  | Color Slot 7 - Green (0 - 100%) |
+|     21  | Color Slot 7 - Blue (0 - 100%)  |
+
+### Light Channel Table
+
+| Channel | Function                         |
+| -------:| -------------------------------- |
+|      1  | Dimmer (0 - 100%)                |
+|      2  | Color Slot Idx (see table below) |
+
+| Value     | Color Slot Idx |
+| ---------:| -------------- |
+|   0 -  35 | Color Slot 1   |
+|  36 -  71 | Color Slot 2   |
+|  72 - 107 | Color Slot 3   |
+| 108 - 143 | Color Slot 4   |
+| 144 - 179 | Color Slot 5   |
+| 180 - 215 | Color Slot 6   |
+| 216 - 255 | Color Slot 7   |
