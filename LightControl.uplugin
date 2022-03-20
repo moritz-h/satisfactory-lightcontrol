@@ -1,10 +1,10 @@
 {
 	"FileVersion": 3,
 	"Version": 0,
-	"VersionName": "0.3.0",
-	"SemVersion": "0.3.0",
+	"VersionName": "0.4.0",
+	"SemVersion": "0.4.0",
 	"FriendlyName": "Light Control",
-	"Description": "Control the build-in lights with ArtNet/DMX.",
+	"Description": "Control the build-in lights with Art-Net/DMX.",
 	"Category": "Modding",
 	"CreatedBy": "moritz-h",
 	"CreatedByURL": "https://github.com/moritz-h",
@@ -26,7 +26,7 @@
 	"Plugins": [
 		{
 			"Name": "SML",
-			"SemVersion": "^3.2.0",
+			"SemVersion": "^3.3.0",
 			"bIsOptional": false,
 			"Enabled": true
 		}
