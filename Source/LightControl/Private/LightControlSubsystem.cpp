@@ -60,7 +60,7 @@ void ALightControlSubsystem::Tick(float DeltaSeconds)
     // Set colors
     if (colorsNeedUpdate.AtomicSet(false)) {
         auto* gameState = GetWorld()->GetGameState<AFGGameState>();
-        for (int i = 0; i < colors.Num(); i++) {
+        for (int32 i = 0; i < colors.Num(); i++) {
             gameState->Server_SetBuildableLightColorSlot(i, colors[i]);
         }
     }
@@ -103,7 +103,7 @@ void ALightControlSubsystem::Receive(const FArrayReaderPtr& data, const FIPv4End
     }
 
     // Copy to DmxData storage
-    FMemory::Memcpy(DmxData.GetData() + Universe * 512, buffer + 18, DataLength);
+    FMemory::Memcpy(DmxData.GetData() + static_cast<int32>(Universe) * 512, buffer + 18, DataLength);
 
     // Update light colors
     if (Universe == ColorUniverse) {
@@ -114,7 +114,7 @@ void ALightControlSubsystem::Receive(const FArrayReaderPtr& data, const FIPv4End
 void ALightControlSubsystem::UpdateColors()
 {
     // 3 color channels per light
-    for (int i = 0; i < colors.Num(); i++) {
+    for (int32 i = 0; i < colors.Num(); i++) {
         const float r = static_cast<float>(GetDmxValue(ColorUniverse, ColorChannel + 3 * i + 0)) / 255.0f;
         const float g = static_cast<float>(GetDmxValue(ColorUniverse, ColorChannel + 3 * i + 1)) / 255.0f;
         const float b = static_cast<float>(GetDmxValue(ColorUniverse, ColorChannel + 3 * i + 2)) / 255.0f;

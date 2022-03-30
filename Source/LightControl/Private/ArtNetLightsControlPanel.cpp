@@ -39,7 +39,7 @@ void AArtNetLightsControlPanel::Tick(float DeltaSeconds)
     }
 
     time += DeltaSeconds;
-    bool blink = static_cast<int>(time * 2.0f) % 2 == 0;
+    bool blink = static_cast<int32>(time * 2.0f) % 2 == 0;
 
     const int32 NumColors = LightControlSubsystem->GetNumColors();
     const int32 ColorsDmxRange = 255 / NumColors;
