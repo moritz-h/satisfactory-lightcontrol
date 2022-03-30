@@ -124,7 +124,7 @@ public:
     void SetLightChannel(AFGBuildableLightSource* light, int32 channel) {
         auto* lightData = LightsMap.Find(light);
         if (lightData != nullptr) {
-            lightData->Channel = FMath::Clamp(channel, 0, 255);
+            lightData->Channel = FMath::Clamp(channel, 1, 512);
         }
     }
 
