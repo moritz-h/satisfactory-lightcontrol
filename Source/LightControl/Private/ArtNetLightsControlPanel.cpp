@@ -48,37 +48,28 @@ void AArtNetLightsControlPanel::Tick(float DeltaSeconds)
         auto* lightActor = Elem.Key;
         auto& info = Elem.Value;
 
+        bool enabled = blink;
+        float dimmer = 1.0f;
+        int32 colorIdx = 0;
+
         if (!info.Highlight) {
             const uint8 dmxDimmer = LightControlSubsystem->GetDmxValue(info.Universe, info.Channel);
             const uint8 dmxColorIdx = LightControlSubsystem->GetDmxValue(info.Universe, info.Channel + 1);
-            info.enabled_target = dmxDimmer > 0;
-            info.dimmer_target = static_cast<float>(dmxDimmer > 0 ? dmxDimmer - 1 : 0) / 254.0f;
-            info.colorIdx_target = FMath::Clamp(static_cast<int32>(dmxColorIdx) / ColorsDmxRange, 0, NumColors - 1);
-        } else {
-            if (blink) {
-                info.enabled_target = true;
-                info.dimmer_target = 1.0f;
-                info.colorIdx_target = 0;
-            } else {
-                info.enabled_target = false;
-            }
+            enabled = dmxDimmer > 0;
+            dimmer = static_cast<float>(dmxDimmer > 0 ? dmxDimmer - 1 : 0) / 254.0f;
+            colorIdx = FMath::Clamp(static_cast<int32>(dmxColorIdx) / ColorsDmxRange, 0, NumColors - 1);
         }
 
-        const bool enabled = info.enabled_target;
-        if (/* TODO force update every frame? */ true || info.enabled_actual != enabled) {
+        if (lightActor->IsLightEnabled() != enabled) {
             lightActor->SetLightEnabled(enabled);
-            info.enabled_actual = enabled;
         }
-        const int32 colorIdx = info.colorIdx_target;
-        const float dimmer = info.dimmer_target;
-        if (/* TODO force update every frame? */ true || info.colorIdx_actual != colorIdx || info.dimmer_actual != dimmer) {
+        const auto& currentData = lightActor->GetLightControlData();
+        if (colorIdx != currentData.ColorSlotIndex || dimmer != currentData.Intensity || currentData.IsTimeOfDayAware) {
             FLightSourceControlData data;
             data.ColorSlotIndex = colorIdx;
             data.Intensity = dimmer;
             data.IsTimeOfDayAware = false;
             lightActor->SetLightControlData(data);
-            info.colorIdx_actual = colorIdx;
-            info.dimmer_actual = dimmer;
         }
     }
 }

@@ -15,25 +15,13 @@ struct FLightSourceInfo
     FLightSourceInfo() :
         Universe(0),
         Channel(1),
-        Highlight(false),
-        enabled_actual(false),
-        enabled_target(true),
-        dimmer_actual(-1.0f),
-        dimmer_target(0.0f),
-        colorIdx_actual(-1),
-        colorIdx_target(0) {}
+        Highlight(false) {}
 
     FLightSourceInfo(int32 universe, int32 channel, const FString& name) :
         Universe(universe),
         Channel(channel),
         Name(name),
-        Highlight(false),
-        enabled_actual(false),
-        enabled_target(true),
-        dimmer_actual(-1.0f),
-        dimmer_target(0.0f),
-        colorIdx_actual(-1),
-        colorIdx_target(0) {}
+        Highlight(false) {}
 
     UPROPERTY( SaveGame )
     int32 Universe;
@@ -46,15 +34,6 @@ struct FLightSourceInfo
 
     UPROPERTY( SaveGame )
     bool Highlight;
-
-    bool enabled_actual;
-    bool enabled_target;
-
-    float dimmer_actual;
-    float dimmer_target;
-
-    int32 colorIdx_actual;
-    int32 colorIdx_target;
 };
 
 UCLASS()
