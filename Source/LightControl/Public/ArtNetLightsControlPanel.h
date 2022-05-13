@@ -36,6 +36,14 @@ struct FLightSourceInfo
     bool Highlight;
 };
 
+UENUM()
+enum class ELightControlMode : uint8
+{
+    NONE,
+    COLOR_IDX,
+    RGB,
+};
+
 UCLASS()
 class LIGHTCONTROL_API AArtNetLightsControlPanel : public AFGBuildableControlPanelHost
 {
@@ -49,6 +57,16 @@ public:
 
     UFUNCTION()
     void UpdateLights();
+
+    UFUNCTION(BlueprintCallable, Category = "LightControl|ArtNetLightsControlPanel")
+    ELightControlMode GetControlMode() {
+        return ControlMode;
+    }
+
+    UFUNCTION(BlueprintCallable, Category = "LightControl|ArtNetLightsControlPanel")
+    void SetControlMode(ELightControlMode mode) {
+        ControlMode = mode;
+    }
 
     UFUNCTION(BlueprintCallable, Category = "LightControl|ArtNetLightsControlPanel")
     int32 GetDefaultUniverse() {
@@ -142,6 +160,9 @@ public:
     }
 
 protected:
+    UPROPERTY( SaveGame )
+    ELightControlMode ControlMode;
+
     UPROPERTY( SaveGame )
     int32 DefaultUniverse;
 

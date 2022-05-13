@@ -2,8 +2,10 @@
 
 #include "LogLightControl.h"
 #include "Subsystem/SubsystemActorManager.h"
+#include "FGPowerInfoComponent.h"
 
 AArtNetLightsControlPanel::AArtNetLightsControlPanel() :
+    ControlMode(ELightControlMode::COLOR_IDX),
     DefaultUniverse(0),
     DefaultChannel(0),
     LightControlSubsystem(nullptr),
@@ -48,28 +50,42 @@ void AArtNetLightsControlPanel::Tick(float DeltaSeconds)
         auto* lightActor = Elem.Key;
         auto& info = Elem.Value;
 
-        bool enabled = blink;
-        float dimmer = 1.0f;
-        int32 colorIdx = 0;
-
-        if (!info.Highlight) {
-            const uint8 dmxDimmer = LightControlSubsystem->GetDmxValue(info.Universe, info.Channel);
-            const uint8 dmxColorIdx = LightControlSubsystem->GetDmxValue(info.Universe, info.Channel + 1);
-            enabled = dmxDimmer > 0;
-            dimmer = static_cast<float>(dmxDimmer > 0 ? dmxDimmer - 1 : 0) / 254.0f;
-            colorIdx = FMath::Clamp(static_cast<int32>(dmxColorIdx) / ColorsDmxRange, 0, NumColors - 1);
-        }
-
+        const uint8 dmxDimmer = LightControlSubsystem->GetDmxValue(info.Universe, info.Channel);
+        const float dimmer = static_cast<float>(dmxDimmer > 0 ? dmxDimmer - 1 : 0) / 254.0f;
+        bool enabled = info.Highlight ? blink : dmxDimmer > 0;
         if (lightActor->IsLightEnabled() != enabled) {
             lightActor->SetLightEnabled(enabled);
         }
-        const auto& currentData = lightActor->GetLightControlData();
-        if (colorIdx != currentData.ColorSlotIndex || dimmer != currentData.Intensity || currentData.IsTimeOfDayAware) {
-            FLightSourceControlData data;
-            data.ColorSlotIndex = colorIdx;
-            data.Intensity = dimmer;
-            data.IsTimeOfDayAware = false;
-            lightActor->SetLightControlData(data);
+
+        const auto& lightData = lightActor->GetLightControlData();
+        if (ControlMode == ELightControlMode::COLOR_IDX && !info.Highlight) {
+            const uint8 dmxColorIdx = LightControlSubsystem->GetDmxValue(info.Universe, info.Channel + 1);
+            const int32 colorIdx = FMath::Clamp(static_cast<int32>(dmxColorIdx) / ColorsDmxRange, 0, NumColors - 1);
+            if (lightData.ColorSlotIndex != colorIdx || lightData.Intensity != dimmer || lightData.IsTimeOfDayAware) {
+                const FLightSourceControlData data{colorIdx, dimmer, false};
+                lightActor->SetLightControlData(data);
+            }
+        } else {
+            // Disable IsTimeOfDayAware using the SetLightControlData interface. Many changes are done internally.
+            if (lightData.IsTimeOfDayAware) {
+                const FLightSourceControlData data{0, 0.0f, false};
+                lightActor->SetLightControlData(data);
+            }
+            FLinearColor color(1.0f, 1.0f, 1.0f);
+            if (!info.Highlight) {
+                const uint8 dmxR = LightControlSubsystem->GetDmxValue(info.Universe, info.Channel + 1);
+                const uint8 dmxG = LightControlSubsystem->GetDmxValue(info.Universe, info.Channel + 2);
+                const uint8 dmxB = LightControlSubsystem->GetDmxValue(info.Universe, info.Channel + 3);
+                color.R = static_cast<float>(dmxR) / 255.0f;
+                color.G = static_cast<float>(dmxG) / 255.0f;
+                color.B = static_cast<float>(dmxB) / 255.0f;
+            }
+            if (lightActor->mLightControlData.Intensity != dimmer || lightActor->mCurrentLightColor != color) {
+                lightActor->mLightControlData.Intensity = dimmer;
+                lightActor->mPowerInfo->SetTargetConsumption(dimmer);
+                lightActor->mCurrentLightColor = color;
+                lightActor->UpdateMeshDataAndHandles();
+            }
         }
     }
 }
