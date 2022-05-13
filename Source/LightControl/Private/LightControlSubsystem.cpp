@@ -11,6 +11,7 @@ ALightControlSubsystem::ALightControlSubsystem() :
     ColorSubNet(0),
     ColorUniverse(0),
     ColorChannel(1),
+    UseColors(true),
     colorsNeedUpdate(false)
 {
     PrimaryActorTick.bCanEverTick = true;
@@ -58,7 +59,7 @@ void ALightControlSubsystem::Tick(float DeltaSeconds)
     Super::Tick(DeltaSeconds);
 
     // Set colors
-    if (colorsNeedUpdate.AtomicSet(false)) {
+    if (UseColors && colorsNeedUpdate.AtomicSet(false)) {
         auto* gameState = GetWorld()->GetGameState<AFGGameState>();
         for (int32 i = 0; i < colors.Num(); i++) {
             gameState->Server_SetBuildableLightColorSlot(i, colors[i]);

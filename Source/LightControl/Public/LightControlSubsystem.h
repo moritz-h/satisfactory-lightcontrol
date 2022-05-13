@@ -70,6 +70,16 @@ public:
         UpdateColors();
     }
 
+    UFUNCTION( BlueprintCallable, BlueprintPure = false, Category = "LightControl|LightControlSubsystem" )
+    bool GetUseColors() const {
+        return UseColors;
+    }
+
+    UFUNCTION( BlueprintCallable, BlueprintPure = false, Category = "LightControl|LightControlSubsystem" )
+    void SetUseColors(bool useColors) {
+        UseColors = useColors;
+    }
+
     FORCEINLINE uint8 GetDmxValue(int32 net, int32 subnet, int32 universe, int32 channel) const {
         if (net >= 0 && net < 128 && subnet >= 0 && subnet < 16 && universe >= 0 && universe < 16 && channel >= 1 && channel <= 512) {
             return DmxData[512 * (16 * (16 * net + subnet) + universe) + channel - 1];
@@ -97,6 +107,9 @@ protected:
 
     UPROPERTY( SaveGame )
     int32 ColorChannel;
+
+    UPROPERTY( SaveGame )
+    bool UseColors;
 
     FSocket* socket;
     FUdpSocketReceiver* receiver;
