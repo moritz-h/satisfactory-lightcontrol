@@ -6,6 +6,8 @@
 
 AArtNetLightsControlPanel::AArtNetLightsControlPanel() :
     ControlMode(ELightControlMode::COLOR_IDX),
+    Net(0),
+    SubNet(0),
     DefaultUniverse(0),
     DefaultChannel(0),
     LightControlSubsystem(nullptr),
@@ -25,13 +27,17 @@ void AArtNetLightsControlPanel::BeginPlay()
     if (SubsystemActorManager) {
         LightControlSubsystem = SubsystemActorManager->GetSubsystemActor<ALightControlSubsystem>();
     } else {
-        UE_LOG(LogLightControl, Warning, TEXT("AArtNetLightsControlPanel: SubsystemActorManager missing."));
+        UE_LOG(LogLightControl, Error, TEXT("AArtNetLightsControlPanel: SubsystemActorManager missing."));
     }
 }
 
 void AArtNetLightsControlPanel::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
+
+    if (LightControlSubsystem == nullptr) {
+        return;
+    }
 
     // GetControlledBuildables is empty when called from BeginPlay.
     if (isFirstTick) {
@@ -50,7 +56,7 @@ void AArtNetLightsControlPanel::Tick(float DeltaSeconds)
         auto* lightActor = Elem.Key;
         auto& info = Elem.Value;
 
-        const uint8 dmxDimmer = LightControlSubsystem->GetDmxValue(info.Universe, info.Channel);
+        const uint8 dmxDimmer = LightControlSubsystem->GetDmxValue(Net, SubNet, info.Universe, info.Channel);
         const float dimmer = static_cast<float>(dmxDimmer > 0 ? dmxDimmer - 1 : 0) / 254.0f;
         bool enabled = info.Highlight ? blink : dmxDimmer > 0;
         if (lightActor->IsLightEnabled() != enabled) {
@@ -59,7 +65,7 @@ void AArtNetLightsControlPanel::Tick(float DeltaSeconds)
 
         const auto& lightData = lightActor->GetLightControlData();
         if (ControlMode == ELightControlMode::COLOR_IDX && !info.Highlight) {
-            const uint8 dmxColorIdx = LightControlSubsystem->GetDmxValue(info.Universe, info.Channel + 1);
+            const uint8 dmxColorIdx = LightControlSubsystem->GetDmxValue(Net, SubNet, info.Universe, info.Channel + 1);
             const int32 colorIdx = FMath::Clamp(static_cast<int32>(dmxColorIdx) / ColorsDmxRange, 0, NumColors - 1);
             if (lightData.ColorSlotIndex != colorIdx || lightData.Intensity != dimmer || lightData.IsTimeOfDayAware) {
                 const FLightSourceControlData data{colorIdx, dimmer, false};
@@ -73,9 +79,9 @@ void AArtNetLightsControlPanel::Tick(float DeltaSeconds)
             }
             FLinearColor color(1.0f, 1.0f, 1.0f);
             if (!info.Highlight) {
-                const uint8 dmxR = LightControlSubsystem->GetDmxValue(info.Universe, info.Channel + 1);
-                const uint8 dmxG = LightControlSubsystem->GetDmxValue(info.Universe, info.Channel + 2);
-                const uint8 dmxB = LightControlSubsystem->GetDmxValue(info.Universe, info.Channel + 3);
+                const uint8 dmxR = LightControlSubsystem->GetDmxValue(Net, SubNet, info.Universe, info.Channel + 1);
+                const uint8 dmxG = LightControlSubsystem->GetDmxValue(Net, SubNet, info.Universe, info.Channel + 2);
+                const uint8 dmxB = LightControlSubsystem->GetDmxValue(Net, SubNet, info.Universe, info.Channel + 3);
                 color.R = static_cast<float>(dmxR) / 255.0f;
                 color.G = static_cast<float>(dmxG) / 255.0f;
                 color.B = static_cast<float>(dmxB) / 255.0f;

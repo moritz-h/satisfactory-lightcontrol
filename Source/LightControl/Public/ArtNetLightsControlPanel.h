@@ -69,13 +69,33 @@ public:
     }
 
     UFUNCTION(BlueprintCallable, Category = "LightControl|ArtNetLightsControlPanel")
+    int32 GetNet() {
+        return Net;
+    }
+
+    UFUNCTION(BlueprintCallable, Category = "LightControl|ArtNetLightsControlPanel")
+    void SetNet(int32 net) {
+        Net = FMath::Clamp(net, 0, 127);
+    }
+
+    UFUNCTION(BlueprintCallable, Category = "LightControl|ArtNetLightsControlPanel")
+    int32 GetSubNet() {
+        return SubNet;
+    }
+
+    UFUNCTION(BlueprintCallable, Category = "LightControl|ArtNetLightsControlPanel")
+    void SetSubNet(int32 subNet) {
+        SubNet = FMath::Clamp(subNet, 0, 15);
+    }
+
+    UFUNCTION(BlueprintCallable, Category = "LightControl|ArtNetLightsControlPanel")
     int32 GetDefaultUniverse() {
         return DefaultUniverse;
     }
 
     UFUNCTION(BlueprintCallable, Category = "LightControl|ArtNetLightsControlPanel")
     void SetDefaultUniverse(int32 universe) {
-        DefaultUniverse = FMath::Clamp(universe, 0, 16);
+        DefaultUniverse = FMath::Clamp(universe, 0, 15);
     }
 
     UFUNCTION(BlueprintCallable, Category = "LightControl|ArtNetLightsControlPanel")
@@ -104,7 +124,7 @@ public:
     void SetLightUniverse(AFGBuildableLightSource* light, int32 universe) {
         auto* lightData = LightsMap.Find(light);
         if (lightData != nullptr) {
-            lightData->Universe = FMath::Clamp(universe, 0, 16);
+            lightData->Universe = FMath::Clamp(universe, 0, 15);
         }
     }
 
@@ -162,6 +182,12 @@ public:
 protected:
     UPROPERTY( SaveGame )
     ELightControlMode ControlMode;
+
+    UPROPERTY( SaveGame )
+    int32 Net;
+
+    UPROPERTY( SaveGame )
+    int32 SubNet;
 
     UPROPERTY( SaveGame )
     int32 DefaultUniverse;

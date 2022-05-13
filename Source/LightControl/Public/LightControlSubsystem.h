@@ -29,23 +29,23 @@ public:
     virtual bool ShouldSave_Implementation() const override { return true; }
 
     UFUNCTION( BlueprintCallable, BlueprintPure = false, Category = "LightControl|LightControlSubsystem" )
-    int32 GetNet() const {
-        return ArtNet_Net;
+    int32 GetColorNet() const {
+        return ColorNet;
     }
 
     UFUNCTION( BlueprintCallable, BlueprintPure = false, Category = "LightControl|LightControlSubsystem" )
-    void SetNet(int32 net) {
-        ArtNet_Net = FMath::Clamp(net, 0, 16);
+    void SetColorNet(int32 net) {
+        ColorNet = FMath::Clamp(net, 0, 127);
     }
 
     UFUNCTION( BlueprintCallable, BlueprintPure = false, Category = "LightControl|LightControlSubsystem" )
-    int32 GetSubNet() const {
-        return ArtNet_SubNet;
+    int32 GetColorSubNet() const {
+        return ColorSubNet;
     }
 
     UFUNCTION( BlueprintCallable, BlueprintPure = false, Category = "LightControl|LightControlSubsystem" )
-    void SetSubNet(int32 subNet) {
-        ArtNet_SubNet = FMath::Clamp(subNet, 0, 16);
+    void SetColorSubNet(int32 subNet) {
+        ColorSubNet = FMath::Clamp(subNet, 0, 15);
     }
 
     UFUNCTION( BlueprintCallable, BlueprintPure = false, Category = "LightControl|LightControlSubsystem" )
@@ -55,7 +55,7 @@ public:
 
     UFUNCTION( BlueprintCallable, BlueprintPure = false, Category = "LightControl|LightControlSubsystem" )
     void SetColorUniverse(int32 universe) {
-        ColorUniverse = FMath::Clamp(universe, 0, 16);
+        ColorUniverse = FMath::Clamp(universe, 0, 15);
         UpdateColors();
     }
 
@@ -70,9 +70,9 @@ public:
         UpdateColors();
     }
 
-    FORCEINLINE uint8 GetDmxValue(int32 universe, int32 channel) const {
-        if (universe >= 0 && universe < 16 && channel >= 1 && channel <= 512) {
-            return DmxData[512 * universe + channel - 1];
+    FORCEINLINE uint8 GetDmxValue(int32 net, int32 subnet, int32 universe, int32 channel) const {
+        if (net >= 0 && net < 128 && subnet >= 0 && subnet < 16 && universe >= 0 && universe < 16 && channel >= 1 && channel <= 512) {
+            return DmxData[512 * (16 * (16 * net + subnet) + universe) + channel - 1];
         }
         return 0;
     }
@@ -87,10 +87,10 @@ protected:
     void UpdateColors();
 
     UPROPERTY( SaveGame )
-    int32 ArtNet_Net;
+    int32 ColorNet;
 
     UPROPERTY( SaveGame )
-    int32 ArtNet_SubNet;
+    int32 ColorSubNet;
 
     UPROPERTY( SaveGame )
     int32 ColorUniverse;

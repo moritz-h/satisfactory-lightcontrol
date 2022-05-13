@@ -7,8 +7,8 @@
 #include "Util/RuntimeBlueprintFunctionLibrary.h"
 
 ALightControlSubsystem::ALightControlSubsystem() :
-    ArtNet_Net(0),
-    ArtNet_SubNet(0),
+    ColorNet(0),
+    ColorSubNet(0),
     ColorUniverse(0),
     ColorChannel(1),
     colorsNeedUpdate(false)
@@ -18,7 +18,7 @@ ALightControlSubsystem::ALightControlSubsystem() :
     socket = nullptr;
     receiver = nullptr;
 
-    DmxData.Init(0, 16 * 512);
+    DmxData.Init(0, 128 * 16 * 16 * 512);
 }
 
 void ALightControlSubsystem::BeginPlay()
@@ -89,11 +89,11 @@ void ALightControlSubsystem::Receive(const FArrayReaderPtr& data, const FIPv4End
     // const int8 ProtVerLo = buffer[11];
     // const int8 Sequence = buffer[12];
     // const int8 Physical = buffer[13];
-    const int8 Universe = buffer[14] & 0xF;
-    const int8 SubNet = (buffer[14] >> 4) & 0xF;
-    const int8 Net = buffer[15] & 0x7F;
+    const int32 Universe = static_cast<int32>(buffer[14] & 0xF);
+    const int32 SubNet = static_cast<int32>((buffer[14] >> 4) & 0xF);
+    const int32 Net = static_cast<int32>(buffer[15] & 0x7F);
 
-    if (Net != ArtNet_Net || SubNet != ArtNet_SubNet || Universe < 0 || Universe >= 16) {
+    if (Net < 0 || Net >= 128 || SubNet < 0 || SubNet >= 16 || Universe < 0 || Universe >= 16) {
         return;
     }
 
@@ -103,10 +103,10 @@ void ALightControlSubsystem::Receive(const FArrayReaderPtr& data, const FIPv4End
     }
 
     // Copy to DmxData storage
-    FMemory::Memcpy(DmxData.GetData() + static_cast<int32>(Universe) * 512, buffer + 18, DataLength);
+    FMemory::Memcpy(DmxData.GetData() + 512 * (16 * (16 * Net + SubNet) + Universe), buffer + 18, DataLength);
 
     // Update light colors
-    if (Universe == ColorUniverse) {
+    if (Net == ColorNet && SubNet == ColorSubNet && Universe == ColorUniverse) {
         UpdateColors();
     }
 }
@@ -115,9 +115,9 @@ void ALightControlSubsystem::UpdateColors()
 {
     // 3 color channels per light
     for (int32 i = 0; i < colors.Num(); i++) {
-        const float r = static_cast<float>(GetDmxValue(ColorUniverse, ColorChannel + 3 * i + 0)) / 255.0f;
-        const float g = static_cast<float>(GetDmxValue(ColorUniverse, ColorChannel + 3 * i + 1)) / 255.0f;
-        const float b = static_cast<float>(GetDmxValue(ColorUniverse, ColorChannel + 3 * i + 2)) / 255.0f;
+        const float r = static_cast<float>(GetDmxValue(ColorNet, ColorSubNet, ColorUniverse, ColorChannel + 3 * i + 0)) / 255.0f;
+        const float g = static_cast<float>(GetDmxValue(ColorNet, ColorSubNet, ColorUniverse, ColorChannel + 3 * i + 1)) / 255.0f;
+        const float b = static_cast<float>(GetDmxValue(ColorNet, ColorSubNet, ColorUniverse, ColorChannel + 3 * i + 2)) / 255.0f;
         colors[i] = FLinearColor(r, g, b);
     }
     colorsNeedUpdate = true;
