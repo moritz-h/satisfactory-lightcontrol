@@ -57,7 +57,7 @@ void AArtNetLightsControlPanel::Tick(float DeltaSeconds)
         auto& info = Elem.Value;
 
         const uint8 dmxDimmer = LightControlSubsystem->GetDmxValue(Net, SubNet, info.Universe, info.Channel);
-        const float dimmer = static_cast<float>(dmxDimmer > 0 ? dmxDimmer - 1 : 0) / 254.0f;
+        const float dimmer = info.Highlight ? 1.0f : static_cast<float>(dmxDimmer > 0 ? dmxDimmer - 1 : 0) / 254.0f;
         bool enabled = info.Highlight ? blink : dmxDimmer > 0;
         if (lightActor->IsLightEnabled() != enabled) {
             lightActor->SetLightEnabled(enabled);
