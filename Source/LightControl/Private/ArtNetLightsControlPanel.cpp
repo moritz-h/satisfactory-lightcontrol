@@ -67,7 +67,14 @@ void AArtNetLightsControlPanel::Tick(float DeltaSeconds)
         if (ControlMode == ELightControlMode::COLOR_IDX && !info.Highlight) {
             const uint8 dmxColorIdx = LightControlSubsystem->GetDmxValue(Net, SubNet, info.Universe, info.Channel + 1);
             const int32 colorIdx = FMath::Clamp(static_cast<int32>(dmxColorIdx) / ColorsDmxRange, 0, NumColors - 1);
-            if (lightData.ColorSlotIndex != colorIdx || lightData.Intensity != dimmer || lightData.IsTimeOfDayAware) {
+            if (lightData.ColorSlotIndex != colorIdx || lightData.Intensity != dimmer || lightData.IsTimeOfDayAware || info.UsedPrivateInterface) {
+                // SetLightControlData uses internal change detection but if we used the private interface
+                // these changes are not noticed. Therefore, send dummy data to force a value change.
+                if (info.UsedPrivateInterface) {
+                    const FLightSourceControlData dummyData{colorIdx, dimmer < 0.5f ? 1.0f : 0.0f, false};
+                    lightActor->SetLightControlData(dummyData);
+                    info.UsedPrivateInterface = false;
+                }
                 const FLightSourceControlData data{colorIdx, dimmer, false};
                 lightActor->SetLightControlData(data);
             }
@@ -91,6 +98,9 @@ void AArtNetLightsControlPanel::Tick(float DeltaSeconds)
                 lightActor->mPowerInfo->SetTargetConsumption(dimmer);
                 lightActor->mCurrentLightColor = color;
                 lightActor->UpdateMeshDataAndHandles();
+            }
+            if (!info.UsedPrivateInterface) {
+                info.UsedPrivateInterface = true;
             }
         }
     }

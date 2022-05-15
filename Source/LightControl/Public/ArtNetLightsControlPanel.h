@@ -15,13 +15,15 @@ struct FLightSourceInfo
     FLightSourceInfo() :
         Universe(0),
         Channel(1),
-        Highlight(false) {}
+        Highlight(false),
+        UsedPrivateInterface(false) {}
 
     FLightSourceInfo(int32 universe, int32 channel, const FString& name) :
         Universe(universe),
         Channel(channel),
         Name(name),
-        Highlight(false) {}
+        Highlight(false),
+        UsedPrivateInterface(false) {}
 
     UPROPERTY( SaveGame )
     int32 Universe;
@@ -34,6 +36,8 @@ struct FLightSourceInfo
 
     UPROPERTY( SaveGame )
     bool Highlight;
+
+    bool UsedPrivateInterface;
 };
 
 UENUM()
