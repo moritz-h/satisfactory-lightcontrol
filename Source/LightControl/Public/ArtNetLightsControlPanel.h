@@ -183,6 +183,9 @@ public:
         }
     }
 
+    UFUNCTION(BlueprintCallable, Category = "LightControl|ArtNetLightsControlPanel")
+    void AutoAddressLights();
+
 protected:
     UPROPERTY( SaveGame )
     ELightControlMode ControlMode;

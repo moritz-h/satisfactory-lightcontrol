@@ -9,7 +9,7 @@ AArtNetLightsControlPanel::AArtNetLightsControlPanel() :
     Net(0),
     SubNet(0),
     DefaultUniverse(0),
-    DefaultChannel(0),
+    DefaultChannel(1),
     LightControlSubsystem(nullptr),
     isFirstTick(true),
     time(0.0f)
@@ -146,4 +146,46 @@ TArray<AFGBuildableLightSource*> AArtNetLightsControlPanel::GetLights() const
     });
 
     return lights;
+}
+
+void AArtNetLightsControlPanel::AutoAddressLights()
+{
+    TArray<AFGBuildableLightSource*> lights;
+    LightsMap.GetKeys(lights);
+
+    lights.Sort([this](const AFGBuildableLightSource& A, const AFGBuildableLightSource& B) {
+        // Round to 10 cm precision.
+        const auto ALoc = A.GetActorLocation() / 10.0f;
+        const auto BLoc = B.GetActorLocation() / 10.0f;
+        FIntVector ALocInt(FMath::RoundToInt(ALoc.X), FMath::RoundToInt(ALoc.Y), FMath::RoundToInt(ALoc.Z));
+        FIntVector BLocInt(FMath::RoundToInt(BLoc.X), FMath::RoundToInt(BLoc.Y), FMath::RoundToInt(BLoc.Z));
+        if (ALocInt.Z == BLocInt.Z) {
+            if (ALocInt.Y == BLocInt.Y) {
+                return ALocInt.X < BLocInt.X;
+            }
+            return ALocInt.Y < BLocInt.Y;
+        }
+        return ALocInt.Z < BLocInt.Z;
+    });
+
+    const int32 dmxOffset = (ControlMode == ELightControlMode::RGB) ? 4 : 2;
+    int32 universe = DefaultUniverse;
+    int32 channel = DefaultChannel;
+
+    for (int32 i = 0; i < lights.Num(); i++) {
+        auto* lightData = LightsMap.Find(lights[i]);
+        if (lightData != nullptr) {
+            lightData->Name = FString::Printf(TEXT("Light_%05i"), i + 1);
+            lightData->Universe = universe;
+            lightData->Channel = channel;
+
+            if (universe < 15 || (universe == 15 && channel <= 512 - 2 * dmxOffset + 1)) {
+                channel += dmxOffset;
+                if (channel > 512 - dmxOffset + 1) {
+                    channel = 1;
+                    universe++;
+                }
+            }
+        }
+    }
 }
