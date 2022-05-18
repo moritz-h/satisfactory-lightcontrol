@@ -87,6 +87,13 @@ public:
         return 0;
     }
 
+    FORCEINLINE FLinearColor GetDmxColorRGB(int32 net, int32 subnet, int32 universe, int32 channel) const {
+        const uint8 dmxR = GetDmxValue(net, subnet, universe, channel + 0);
+        const uint8 dmxG = GetDmxValue(net, subnet, universe, channel + 1);
+        const uint8 dmxB = GetDmxValue(net, subnet, universe, channel + 2);
+        return FLinearColor(static_cast<float>(dmxR) / 255.0f, static_cast<float>(dmxG) / 255.0f, static_cast<float>(dmxB) / 255.0f);
+    }
+
     FORCEINLINE int32 GetNumColors() const {
         return colors.Num();
     }

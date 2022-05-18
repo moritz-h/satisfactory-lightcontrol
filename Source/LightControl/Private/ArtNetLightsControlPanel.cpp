@@ -47,7 +47,7 @@ void AArtNetLightsControlPanel::Tick(float DeltaSeconds)
     }
 
     time += DeltaSeconds;
-    bool blink = static_cast<int32>(time * 2.0f) % 2 == 0;
+    const bool blink = static_cast<int32>(time * 2.0f) % 2 == 0;
 
     const int32 NumColors = LightControlSubsystem->GetNumColors();
     const int32 ColorsDmxRange = 255 / NumColors;
@@ -56,9 +56,15 @@ void AArtNetLightsControlPanel::Tick(float DeltaSeconds)
         auto* lightActor = Elem.Key;
         auto& info = Elem.Value;
 
-        const uint8 dmxDimmer = LightControlSubsystem->GetDmxValue(Net, SubNet, info.Universe, info.Channel);
-        const float dimmer = info.Highlight ? 1.0f : static_cast<float>(dmxDimmer > 0 ? dmxDimmer - 1 : 0) / 254.0f;
-        bool enabled = info.Highlight ? blink : dmxDimmer > 0;
+        bool enabled = true;
+        float dimmer = 1.0f;
+        if (info.Highlight) {
+            enabled = blink;
+        } else if (ControlMode == ELightControlMode::COLOR_IDX || ControlMode == ELightControlMode::DIMMER_RGB) {
+            const uint8 dmxDimmer = LightControlSubsystem->GetDmxValue(Net, SubNet, info.Universe, info.Channel);
+            enabled = dmxDimmer > 0;
+            dimmer = static_cast<float>(dmxDimmer > 0 ? dmxDimmer - 1 : 0) / 254.0f;
+        }
         if (lightActor->IsLightEnabled() != enabled) {
             lightActor->SetLightEnabled(enabled);
         }
@@ -86,12 +92,11 @@ void AArtNetLightsControlPanel::Tick(float DeltaSeconds)
             }
             FLinearColor color(1.0f, 1.0f, 1.0f);
             if (!info.Highlight) {
-                const uint8 dmxR = LightControlSubsystem->GetDmxValue(Net, SubNet, info.Universe, info.Channel + 1);
-                const uint8 dmxG = LightControlSubsystem->GetDmxValue(Net, SubNet, info.Universe, info.Channel + 2);
-                const uint8 dmxB = LightControlSubsystem->GetDmxValue(Net, SubNet, info.Universe, info.Channel + 3);
-                color.R = static_cast<float>(dmxR) / 255.0f;
-                color.G = static_cast<float>(dmxG) / 255.0f;
-                color.B = static_cast<float>(dmxB) / 255.0f;
+                if (ControlMode == ELightControlMode::DIMMER_RGB) {
+                    color = LightControlSubsystem->GetDmxColorRGB(Net, SubNet, info.Universe, info.Channel + 1);
+                } else if (ControlMode == ELightControlMode::RGB) {
+                    color = LightControlSubsystem->GetDmxColorRGB(Net, SubNet, info.Universe, info.Channel);
+                }
             }
             if (lightActor->mLightControlData.Intensity != dimmer || lightActor->mCurrentLightColor != color) {
                 lightActor->mLightControlData.Intensity = dimmer;
@@ -168,7 +173,13 @@ void AArtNetLightsControlPanel::AutoAddressLights()
         return ALocInt.Z < BLocInt.Z;
     });
 
-    const int32 dmxOffset = (ControlMode == ELightControlMode::RGB) ? 4 : 2;
+    int32 dmxOffset = 2;
+    if (ControlMode == ELightControlMode::DIMMER_RGB) {
+        dmxOffset = 4;
+    }
+    else if (ControlMode == ELightControlMode::RGB) {
+        dmxOffset = 3;
+    }
     int32 universe = DefaultUniverse;
     int32 channel = DefaultChannel;
 

@@ -40,11 +40,12 @@ struct FLightSourceInfo
     bool UsedPrivateInterface;
 };
 
-UENUM()
+UENUM( BlueprintType )
 enum class ELightControlMode : uint8
 {
     NONE,
     COLOR_IDX,
+    DIMMER_RGB,
     RGB,
 };
 
