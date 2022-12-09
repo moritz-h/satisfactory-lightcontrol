@@ -1,8 +1,8 @@
 {
 	"FileVersion": 3,
 	"Version": 0,
-	"VersionName": "0.7.0",
-	"SemVersion": "0.7.0",
+	"VersionName": "0.8.0",
+	"SemVersion": "0.8.0",
 	"FriendlyName": "Light Control",
 	"Description": "Control the build-in lights with Art-Net/DMX.",
 	"Category": "Modding",
@@ -26,7 +26,7 @@
 	"Plugins": [
 		{
 			"Name": "SML",
-			"SemVersion": "^3.4.0",
+			"SemVersion": "^3.4.1",
 			"bIsOptional": false,
 			"Enabled": true
 		}
