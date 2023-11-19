@@ -1,10 +1,8 @@
 #include "LightControlSubsystem.h"
 
-#include "Configuration/ModConfiguration.h"
 #include "FGGameState.h"
 #include "FGWorldSettings.h"
 #include "LogLightControl.h"
-#include "Util/RuntimeBlueprintFunctionLibrary.h"
 
 ALightControlSubsystem::ALightControlSubsystem() :
     ColorNet(0),
