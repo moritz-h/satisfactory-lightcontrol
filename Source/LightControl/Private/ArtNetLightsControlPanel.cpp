@@ -56,6 +56,13 @@ void AArtNetLightsControlPanel::Tick(float DeltaSeconds)
         auto* lightActor = Elem.Key;
         auto& info = Elem.Value;
 
+        // Updating dismantling lights crashes the game. The game itself seems to remove all connections (triggering
+        // mOnControlledBuildablesChanged) before a light is dismantled. But there are other mods using wireless
+        // connections, which seems to be removed only after dismantling. Therefore, ignore dismantling lights here.
+        if (lightActor->GetIsDismantled()) {
+            continue;
+        }
+
         bool enabled = true;
         float dimmer = 1.0f;
         if (info.Highlight) {
@@ -136,6 +143,9 @@ void AArtNetLightsControlPanel::UpdateLights()
     // because a regular Lights Control Panel cannot (re)enable it remotely. Therefore, enable it on disconnect.
     // UpdateLights() is also called on dismantling the control panel itself.
     for (auto& lightSource : OldLightsMap) {
+        if (lightSource.Key->GetIsDismantled()) {
+            continue;
+        }
         lightSource.Key->SetLightEnabled(true);
     }
 }
