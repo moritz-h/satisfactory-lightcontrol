@@ -3,6 +3,7 @@
 	"Version": 0,
 	"VersionName": "0.9.0",
 	"SemVersion": "0.9.0",
+	"GameVersion": ">=416835",
 	"FriendlyName": "Light Control",
 	"Description": "Control the build-in lights with Art-Net/DMX.",
 	"Category": "Modding",
@@ -25,8 +26,8 @@
 	"Plugins": [
 		{
 			"Name": "SML",
-			"SemVersion": "^3.6.0",
-			"Enabled": true
+			"Enabled": true,
+			"SemVersion": "^3.11.3"
 		}
 	]
 }

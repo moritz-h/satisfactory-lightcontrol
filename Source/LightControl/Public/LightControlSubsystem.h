@@ -4,7 +4,7 @@
 #include "Networking.h"
 #include "Sockets.h"
 #include "SocketSubsystem.h"
-#include "Buildables/FGBuildableLightSource.h"
+#include "FGSaveInterface.h"
 #include "Subsystem/ModSubsystem.h"
 
 #include "LightControlSubsystem.generated.h"

@@ -7,57 +7,76 @@ public class LightControl : ModuleRules
     public LightControl(ReadOnlyTargetRules Target) : base(Target)
     {
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+        CppStandard = CppStandardVersion.Cpp20;
 
         // FactoryGame transitive dependencies
-        PublicDependencyModuleNames.AddRange(new[] {
+        PublicDependencyModuleNames.AddRange(new string[] {
             "Core", "CoreUObject",
             "Engine",
             "DeveloperSettings",
             "PhysicsCore",
             "InputCore",
-            "OnlineSubsystem", "OnlineSubsystemNull", "OnlineSubsystemUtils",
-            "SignificanceManager",
+            //"OnlineSubsystem", "OnlineSubsystemUtils", "OnlineSubsystemNull",
+            //"SignificanceManager",
             "GeometryCollectionEngine",
-            "ChaosVehiclesCore", "ChaosVehicles", "ChaosSolverEngine",
+            //"ChaosVehiclesCore", "ChaosVehicles", "ChaosSolverEngine",
             "AnimGraphRuntime",
-            "AkAudio",
+            //"AkAudio",
             "AssetRegistry",
             "NavigationSystem",
-            "ReplicationGraph",
+            //"ReplicationGraph",
             "AIModule",
             "GameplayTasks",
             "SlateCore", "Slate", "UMG",
+            //"InstancedSplines",
             "RenderCore",
             "CinematicCamera",
             "Foliage",
-            "Niagara",
-            "EnhancedInput",
-            "GameplayCameras",
-            "TemplateSequence",
+            //"Niagara",
+            //"EnhancedInput",
+            //"GameplayCameras",
+            //"TemplateSequence",
             "NetCore",
             "GameplayTags",
+            "Json", "JsonUtilities"
         });
 
         // FactoryGame plugins
-        PublicDependencyModuleNames.AddRange(new[] {
-            "AbstractInstance",
-            "InstancedSplinesComponent",
-            "SignificanceISPC"
+        PublicDependencyModuleNames.AddRange(new string[] {
+            //"AbstractInstance",
+            //"InstancedSplinesComponent",
+            //"SignificanceISPC"
         });
 
         // Header stubs
-        PublicDependencyModuleNames.AddRange(new[] {
+        PublicDependencyModuleNames.AddRange(new string[] {
             "DummyHeaders",
         });
 
         if (Target.Type == TargetRules.TargetType.Editor) {
-            PublicDependencyModuleNames.AddRange(new string[] {"OnlineBlueprintSupport", "AnimGraph"});
+            PublicDependencyModuleNames.AddRange(new string[] {/*"OnlineBlueprintSupport",*/ "AnimGraph"});
         }
         PublicDependencyModuleNames.AddRange(new string[] {"FactoryGame", "SML"});
+
+        PublicIncludePaths.AddRange(new string[] {
+            // ... add public include paths required here ...
+        });
+
+        PrivateIncludePaths.AddRange(new string[] {
+            // ... add private include paths required here ...
+        });
+
+        PublicDependencyModuleNames.AddRange(new string[] {
+            // ... add public dependencies that you statically link with here ...
+        });
 
         PrivateDependencyModuleNames.AddRange(new string[] {
             "Networking",
             "Sockets"
+        });
+
+        DynamicallyLoadedModuleNames.AddRange(new string[] {
+            // ... add any modules that your module loads dynamically here ...
         });
     }
 }

@@ -53,6 +53,7 @@ UCLASS()
 class LIGHTCONTROL_API AArtNetLightsControlPanel : public AFGBuildableControlPanelHost
 {
     GENERATED_BODY()
+
 public:
     AArtNetLightsControlPanel();
 

@@ -5,6 +5,4 @@
 class FLightControlModule : public FDefaultGameModuleImpl {
 public:
     virtual void StartupModule() override;
-
-    virtual bool IsGameModule() const override { return true; }
 };
